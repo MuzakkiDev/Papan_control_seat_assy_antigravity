@@ -138,8 +138,6 @@ function handleAction(action, payload) {
 // =========================================================================
 
 function apiGetMasterData() {
-  checkAndRunDailyRollover(false);
-
   var barang = getTableRows("Master_Barang");
   var customer = getTableRows("Master_Customer");
   var orders = getTableRows("List_Order");
@@ -208,15 +206,16 @@ function apiDailyRollover(payload) {
 }
 
 function checkAndRunDailyRollover(isForce, opKey) {
+  var ss = getSpreadsheet();
+  var tz = ss.getSpreadsheetTimeZone() || "Asia/Jakarta";
   if (!opKey) {
     var now = new Date();
-    var opStart = new Date(now);
-    opStart.setHours(8, 0, 0, 0);
-    if (now < opStart) opStart.setDate(opStart.getDate() - 1);
-    var yyyy = opStart.getFullYear();
-    var mm = ("0" + (opStart.getMonth() + 1)).slice(-2);
-    var dd = ("0" + opStart.getDate()).slice(-2);
-    opKey = yyyy + "-" + mm + "-" + dd;
+    var opDate = new Date(now.getTime());
+    var hourNow = Number(Utilities.formatDate(now, tz, "HH"));
+    if (hourNow < 8) {
+      opDate.setDate(opDate.getDate() - 1);
+    }
+    opKey = Utilities.formatDate(opDate, tz, "yyyy-MM-dd");
   }
 
   var users = getTableRows("Users");
@@ -234,13 +233,31 @@ function checkAndRunDailyRollover(isForce, opKey) {
     appendTableRow("Users", {
       id: "sys_rollover",
       username: "__SYSTEM_ROLLOVER__",
-      password: "NEW",
+      password: "DAY_" + opKey,
       role: "SYSTEM"
     });
-    return { rolloverPerformed: false };
+    return { rolloverPerformed: false, opKey: opKey };
   }
 
-  if (markerUser.password !== opKey || isForce) {
+  var storedDate = "";
+  if (markerUser.password) {
+    var pwdStr = String(markerUser.password);
+    if (pwdStr.indexOf("DAY_") === 0) {
+      storedDate = pwdStr.replace("DAY_", "").trim();
+    } else {
+      try {
+        storedDate = Utilities.formatDate(new Date(pwdStr), tz, "yyyy-MM-dd");
+      } catch (e) {
+        storedDate = pwdStr.trim();
+      }
+    }
+  }
+
+  if (storedDate === opKey && !isForce) {
+    return { rolloverPerformed: false, opKey: opKey };
+  }
+
+  if (isForce || storedDate !== opKey) {
     var barang = getTableRows("Master_Barang");
     var orders = getTableRows("List_Order");
 
@@ -269,7 +286,7 @@ function checkAndRunDailyRollover(isForce, opKey) {
     }
     saveTableRows("List_Order", orders);
 
-    markerUser.password = opKey;
+    markerUser.password = "DAY_" + opKey;
     saveTableRows("Users", users);
 
     return { rolloverPerformed: true, opKey: opKey };
@@ -1018,11 +1035,18 @@ function saveTableRows(sheetName, rows) {
 function appendTableRow(sheetName, rowObj) {
   var ss = getSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
-  var headers = TABLE_SCHEMAS[sheetName];
+  var defaultHeaders = TABLE_SCHEMAS[sheetName];
   if (!sheet) {
     sheet = ss.insertSheet(sheetName);
-    sheet.appendRow(headers);
+    sheet.appendRow(defaultHeaders);
     formatHeaderRow(sheet);
+  }
+  var lastCol = sheet.getLastColumn();
+  var headers = [];
+  if (lastCol > 0) {
+    headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) { return String(h).trim(); });
+  } else {
+    headers = defaultHeaders;
   }
   var rowArr = [];
   for (var j = 0; j < headers.length; j++) {

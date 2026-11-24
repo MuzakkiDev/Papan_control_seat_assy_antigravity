@@ -159,6 +159,35 @@ let selectedForDelete = [],
 let codeReader = null,
   isCameraPaused = false;
 
+function normalizeTransactionRecord(k) {
+  if (!k) return k;
+  // Jika kolom tergeser di Google Sheets: Part_Number berisi tanggal ISO dan qty berisi nama Part
+  if (
+    k.Part_Number &&
+    String(k.Part_Number).includes("T") &&
+    k.qty &&
+    typeof k.qty === "string" &&
+    isNaN(Number(k.qty))
+  ) {
+    return {
+      id: k.id,
+      tanggal: k.Part_Number,
+      Part_Number: String(k.qty).trim(),
+      qty: Number(k.petugas) || 0,
+      petugas: k.catatan || "-",
+      catatan: k.tanggal || "",
+    };
+  }
+  return {
+    id: k.id,
+    tanggal: k.tanggal || k.created_at || "",
+    Part_Number: String(k.Part_Number || "").trim(),
+    qty: Number(k.qty) || 0,
+    petugas: k.petugas || "-",
+    catatan: k.catatan || "",
+  };
+}
+
 const style = document.createElement("style");
 style.innerHTML = `@keyframes toastSlideDown { from { transform: translateY(-100%) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } } @keyframes toastSlideUp { from { transform: translateY(0) scale(1); opacity: 1; } to { transform: translateY(-100%) scale(0.9); opacity: 0; } } .animate-toast-in { animation: toastSlideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; } .animate-toast-out { animation: toastSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }`;
 document.head.appendChild(style);
@@ -201,8 +230,16 @@ const swalUI = Swal.mixin({ buttonsStyling: false });
 window.addEventListener("DOMContentLoaded", () => {
   applyLang();
   startLiveClock();
-  const savedUser = sessionStorage.getItem("sim_inventory_user");
-  if (savedUser) currentUser = JSON.parse(savedUser);
+  const savedUser =
+    sessionStorage.getItem("sim_inventory_user") ||
+    localStorage.getItem("sim_inventory_user");
+  if (savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+    } catch (e) {
+      currentUser = null;
+    }
+  }
   applyRbacUI();
   loadInitialOrMockData();
 
@@ -230,8 +267,8 @@ window.addEventListener("DOMContentLoaded", () => {
             appData.barang = res.barang || [];
             appData.customer = res.customer || [];
             appData.orders = res.orders || [];
-            appData.masuk = res.masuk || [];
-            appData.keluar = res.keluar || [];
+            appData.masuk = (res.masuk || []).map(normalizeTransactionRecord);
+            appData.keluar = (res.keluar || []).map(normalizeTransactionRecord);
             appData.users = res.users || [];
             buildSeatAssyControlDataset();
             refreshAllUI();
@@ -891,10 +928,9 @@ function loadInitialOrMockData() {
         appData.barang = res.barang || [];
         appData.customer = res.customer || [];
         appData.orders = res.orders || [];
-        appData.masuk = res.masuk || [];
-        appData.keluar = res.keluar || [];
+        appData.masuk = (res.masuk || []).map(normalizeTransactionRecord);
+        appData.keluar = (res.keluar || []).map(normalizeTransactionRecord);
         appData.users = res.users || [];
-        await checkAndRunDailyRollover();
         buildSeatAssyControlDataset();
         refreshAllUI();
       } else {
@@ -1045,7 +1081,19 @@ function buildSeatAssyControlDataset() {
   appData.seatAssyControl = list;
 }
 
+function promptLoginToEdit(fieldLabel = "data ini") {
+  showToast(
+    "info",
+    currentLang === "zh" ? "需要登录" : "Perlu Login",
+    currentLang === "zh"
+      ? `请先登录以修改 ${fieldLabel}。`
+      : `Silakan login terlebih dahulu untuk mengubah ${fieldLabel}.`,
+  );
+  openLoginModal();
+}
+
 function promptUpdateCustomerPart(partNumber, currentCust, custCount = 1) {
+  if (!currentUser) return promptLoginToEdit("Customer");
   if (isProcessing) return;
   if (!appData.customer || appData.customer.length === 0)
     return showToast("info", "Info", "Tambahkan data di Master Customer dulu!");
@@ -1111,7 +1159,7 @@ function promptUpdateCustomerPart(partNumber, currentCust, custCount = 1) {
 }
 
 function promptUpdateStokUtama(partNumber, currentQty) {
-  if (!currentUser) return openLoginModal();
+  if (!currentUser) return promptLoginToEdit("Stok Utama");
   if (isProcessing) return;
   swalUI
     .fire({
@@ -1149,6 +1197,12 @@ function promptUpdateStokUtama(partNumber, currentQty) {
           isProcessing = false;
           Swal.close();
           if (response.success) {
+            let item = (appData.barang || []).find(
+              (b) => String(b.Part_Number).trim() === partNumber,
+            );
+            if (item) item.stok = newTotal;
+            buildSeatAssyControlDataset();
+            refreshAllUI();
             showToast("success", "Berhasil Diupdate!");
             refreshAllData();
           } else {
@@ -1160,7 +1214,7 @@ function promptUpdateStokUtama(partNumber, currentQty) {
 }
 
 function promptUpdateAssyFsg(partNumber, currentQty) {
-  if (!currentUser) return openLoginModal();
+  if (!currentUser) return promptLoginToEdit("Stok Assy");
   if (isProcessing) return;
   swalUI
     .fire({
@@ -1199,6 +1253,12 @@ function promptUpdateAssyFsg(partNumber, currentQty) {
           isProcessing = false;
           Swal.close();
           if (response.success) {
+            let item = (appData.barang || []).find(
+              (b) => String(b.Part_Number).trim() === partNumber,
+            );
+            if (item) item.assy_fsg = newTotal;
+            buildSeatAssyControlDataset();
+            refreshAllUI();
             showToast("success", "Berhasil Diupdate!");
             refreshAllData();
           } else {
@@ -1210,7 +1270,7 @@ function promptUpdateAssyFsg(partNumber, currentQty) {
 }
 
 function promptUpdateQtyDay(partNumber, currentQty, customerName = "-") {
-  if (!currentUser) return openLoginModal();
+  if (!currentUser) return promptLoginToEdit("Target QTY/DAY");
   if (isProcessing) return;
   swalUI
     .fire({
@@ -1251,6 +1311,25 @@ function promptUpdateQtyDay(partNumber, currentQty, customerName = "-") {
           isProcessing = false;
           Swal.close();
           if (response.success) {
+            saveLocalMultiCustTarget(partNumber, customerName, newTotal);
+            let foundOrd = (appData.orders || []).find(
+              (o) =>
+                String(o.Part_Number).trim() === partNumber &&
+                String(o.id_customer || "").toLowerCase() ===
+                  String(customerName).toLowerCase(),
+            );
+            if (foundOrd) {
+              foundOrd.qty_order = newTotal;
+            } else {
+              appData.orders.push({
+                id: "ord_" + Date.now(),
+                Part_Number: partNumber,
+                qty_order: newTotal,
+                id_customer: customerName !== "-" ? customerName : "",
+              });
+            }
+            buildSeatAssyControlDataset();
+            refreshAllUI();
             showToast("success", "Target Disimpan");
             refreshAllData();
           } else {
@@ -1262,7 +1341,7 @@ function promptUpdateQtyDay(partNumber, currentQty, customerName = "-") {
 }
 
 function promptUpdateQtyOut(partNumber, customerName, currentQtyOut) {
-  if (!currentUser) return openLoginModal();
+  if (!currentUser) return promptLoginToEdit("QTY OUT");
   if (isProcessing) return;
   swalUI
     .fire({
@@ -1307,7 +1386,104 @@ function promptUpdateQtyOut(partNumber, customerName, currentQtyOut) {
           isProcessing = false;
           Swal.close();
           if (response.success) {
+            appData.keluar.push({
+              id: "trx_" + Date.now(),
+              tanggal: new Date().toISOString(),
+              Part_Number: partNumber,
+              qty: diff,
+              petugas: currentUser.username,
+              catatan: catatanStr,
+            });
+            buildSeatAssyControlDataset();
+            refreshAllUI();
             showToast("success", "Berhasil Diperbarui!");
+            refreshAllData();
+          } else {
+            showToast("error", "Gagal", response.message);
+          }
+        });
+      }
+    });
+}
+
+function promptUpdateSisaDel(
+  partNumber,
+  currentSisaDel,
+  currentQtyDay,
+  currentQtyOut,
+  customerName = "-",
+) {
+  if (!currentUser) return promptLoginToEdit("Sisa Delivery");
+  if (isProcessing) return;
+  swalUI
+    .fire({
+      title:
+        currentLang === "zh" ? "调整剩余交货 (SISA DEL)" : "Atur Sisa Delivery",
+      html: `<p class="text-sm font-bold text-gray-800 mb-1">${partNumber}</p>
+      <p class="text-xs text-gray-600 font-medium mb-1">Customer: <b>${customerName}</b></p>
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-600 mb-3 text-left space-y-1">
+        <div class="flex justify-between"><span>Target Harian (QTY/DAY):</span> <b class="text-slate-800">${currentQtyDay}</b></div>
+        <div class="flex justify-between"><span>Terkirim (QTY OUT):</span> <b class="text-slate-800">${currentQtyOut}</b></div>
+        <div class="flex justify-between border-t border-slate-200 pt-1 font-bold text-red-600"><span>Sisa Del Saat Ini:</span> <span>${currentSisaDel}</span></div>
+      </div>
+      <p class="text-[11px] text-gray-500 mb-2">Masukkan <b>target sisa kirim yang diinginkan</b>. Sistem otomatis menyesuaikan Target QTY/DAY (Target = QTY OUT + Sisa Baru).</p>`,
+      input: "number",
+      inputValue: currentSisaDel > 0 ? currentSisaDel : "",
+      inputAttributes: { min: 0 },
+      showCancelButton: true,
+      confirmButtonText: "Simpan Sisa Delivery",
+      cancelButtonText: "Batal",
+    })
+    .then((res) => {
+      if (res.isConfirmed) {
+        const targetSisa = Number(res.value) || 0;
+        if (targetSisa < 0)
+          return showToast("error", "Error", "Sisa delivery tidak boleh minus");
+        const newQtyDay = (Number(currentQtyOut) || 0) + targetSisa;
+        const diff = newQtyDay - (Number(currentQtyDay) || 0);
+        if (diff === 0 && targetSisa === currentSisaDel) {
+          return showToast(
+            "info",
+            "Tidak ada perubahan",
+            "Angka sisa delivery sama dengan saat ini",
+          );
+        }
+        isProcessing = true;
+        swalUI.fire({
+          title: "Menyimpan...",
+          allowOutsideClick: false,
+          didOpen: () => Swal.showLoading(),
+        });
+        sendToBackend("apiUpdateQtyDay", {
+          partNumber: partNumber,
+          qty: newQtyDay,
+          diff: diff,
+          customer: customerName,
+          petugas: currentUser.username,
+        }).then((response) => {
+          isProcessing = false;
+          Swal.close();
+          if (response.success) {
+            saveLocalMultiCustTarget(partNumber, customerName, newQtyDay);
+            let foundOrd = (appData.orders || []).find(
+              (o) =>
+                String(o.Part_Number).trim() === partNumber &&
+                String(o.id_customer || "").toLowerCase() ===
+                  String(customerName).toLowerCase(),
+            );
+            if (foundOrd) {
+              foundOrd.qty_order = newQtyDay;
+            } else {
+              appData.orders.push({
+                id: "ord_" + Date.now(),
+                Part_Number: partNumber,
+                qty_order: newQtyDay,
+                id_customer: customerName !== "-" ? customerName : "",
+              });
+            }
+            buildSeatAssyControlDataset();
+            refreshAllUI();
+            showToast("success", "Sisa Delivery & Target Disimpan");
             refreshAllData();
           } else {
             showToast("error", "Gagal", response.message);
@@ -1349,36 +1525,43 @@ function generateTableRowsHtml(subDataset) {
           ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">${varFormat}</span>`
           : `<span class="text-slate-400 font-medium text-xs">-</span>`;
 
-    const custClass = canEditCust
-      ? "cursor-pointer hover:bg-slate-200 transition-colors rounded p-1 inline-block"
-      : "";
     const custAction = canEditCust
       ? `onclick="promptUpdateCustomerPart('${row.Part_Number}', '${row.Customer}', ${row.CustomerCount || 1})"`
-      : "";
-    const stokUtamaClass = canEditStokUtama
-      ? "cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors rounded block py-0.5"
-      : "";
+      : (currentUser
+          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah Customer')"`
+          : `onclick="promptLoginToEdit('Customer')"`);
+    const custClass = "cursor-pointer hover:bg-slate-200 transition-colors rounded p-1 inline-block";
+
     const stokUtamaAction = canEditStokUtama
       ? `onclick="promptUpdateStokUtama('${row.Part_Number}', ${row.stock})"`
-      : "";
-    const qtyDayClass = canEditTarget
-      ? "cursor-pointer hover:bg-slate-100 transition-colors rounded block py-0.5"
-      : "";
+      : (currentUser
+          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah Stok Utama')"`
+          : `onclick="promptLoginToEdit('Stok Utama')"`);
+    const stokUtamaClass = "cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors rounded block py-0.5";
+
     const qtyDayAction = canEditTarget
       ? `onclick="promptUpdateQtyDay('${row.Part_Number}', ${row.qty_day}, '${row.Customer}')"`
-      : "";
-    const qtyOutClass = canEditCust
-      ? "cursor-pointer hover:bg-rose-50 hover:text-rose-600 transition-colors rounded block py-0.5"
-      : "";
+      : `onclick="promptLoginToEdit('Target QTY/DAY')"`;
+    const qtyDayClass = "cursor-pointer hover:bg-slate-100 transition-colors rounded block py-0.5";
+
     const qtyOutAction = canEditCust
       ? `onclick="promptUpdateQtyOut('${row.Part_Number}', '${row.Customer}', ${row.qty_out})"`
-      : "";
-    const assyClass = canEditAssy
-      ? "cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors rounded block py-0.5"
-      : "";
+      : (currentUser
+          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah QTY OUT')"`
+          : `onclick="promptLoginToEdit('QTY OUT')"`);
+    const qtyOutClass = "cursor-pointer hover:bg-rose-50 hover:text-rose-600 transition-colors rounded block py-0.5";
+
+    const sisaDelAction = canEditTarget
+      ? `onclick="promptUpdateSisaDel('${row.Part_Number}', ${row.sisa_del}, ${row.qty_day}, ${row.qty_out}, '${row.Customer}')"`
+      : `onclick="promptLoginToEdit('Sisa Delivery')"`;
+    const sisaDelClass = "cursor-pointer hover:bg-red-50 hover:text-red-700 transition-colors rounded block py-0.5";
+
     const assyAction = canEditAssy
       ? `onclick="promptUpdateAssyFsg('${row.Part_Number}', ${row.assy_fsg})"`
-      : "";
+      : (currentUser
+          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Produksi yang dapat mengubah Stok Assy')"`
+          : `onclick="promptLoginToEdit('Stok Assy')`);
+    const assyClass = "cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors rounded block py-0.5";
 
     let isFirstOfGroup = false,
       rowspan = 1;
@@ -1400,11 +1583,11 @@ function generateTableRowsHtml(subDataset) {
         <div class="font-black text-slate-900 text-sm tracking-tight leading-snug truncate" title="${row.Part_Number}">${row.Part_Number}</div>
         <div class="text-[9.5px] text-slate-500 uppercase truncate font-medium leading-none mt-0.5" title="${row.nama_barang}">${row.nama_barang}</div>
       </td>
-      <td class="text-center font-bold text-blue-700 border border-slate-300 px-1 py-1 text-sm tabular-nums" title="${canEditStokUtama ? (currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama") : ""}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
-      <td class="text-center font-bold text-slate-800 border border-slate-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
-      <td class="text-center font-bold text-slate-800 border border-slate-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
-      <td class="text-center font-bold text-red-600 border border-slate-300 px-1 py-1 text-sm tabular-nums">${formatNum(row.sisa_del)}</td>
-      <td class="text-center font-bold text-purple-700 border border-slate-300 px-1 py-1 text-sm tabular-nums"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
+      <td class="text-center font-bold text-blue-700 border border-slate-300 px-1 py-1 text-sm tabular-nums" title="${currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama"}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
+      <td class="text-center font-bold text-slate-800 border border-slate-300 px-1 py-1 text-sm tabular-nums" title="${currentLang === "zh" ? "点击设置每日目标" : "Klik untuk Set Target Harian (QTY/DAY)"}"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
+      <td class="text-center font-bold text-slate-800 border border-slate-300 px-1 py-1 text-sm tabular-nums" title="${currentLang === "zh" ? "点击更新发货" : "Klik untuk Update Pengiriman (QTY OUT)"}"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
+      <td class="text-center font-bold text-red-600 border border-slate-300 px-1 py-1 text-sm tabular-nums" title="${currentLang === "zh" ? "点击调整剩余交货" : "Klik untuk Atur Sisa Delivery (SISA DEL)"}"><span class="${sisaDelClass}" ${sisaDelAction}>${formatNum(row.sisa_del)}</span></td>
+      <td class="text-center font-bold text-purple-700 border border-slate-300 px-1 py-1 text-sm tabular-nums" title="${currentLang === "zh" ? "点击更新组装库存" : "Klik untuk Update Stok Assy FSG"}"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
       <td class="text-center border border-slate-300 px-1 py-1">${varBadge}</td>
     </tr>`;
   }
@@ -2535,6 +2718,7 @@ function logoutAction() {
       if (res.isConfirmed) {
         currentUser = null;
         sessionStorage.removeItem("sim_inventory_user");
+        localStorage.removeItem("sim_inventory_user");
         applyRbacUI();
         switchTab("overview");
         showToast("info", "Sesi Berakhir");
@@ -2558,6 +2742,10 @@ function handleLoginSubmit(e) {
       if (res.success) {
         currentUser = res.user;
         sessionStorage.setItem(
+          "sim_inventory_user",
+          JSON.stringify(currentUser),
+        );
+        localStorage.setItem(
           "sim_inventory_user",
           JSON.stringify(currentUser),
         );
