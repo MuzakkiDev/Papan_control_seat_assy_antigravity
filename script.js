@@ -465,13 +465,13 @@ function switchTab(tabId) {
   const activeTab = document.getElementById(`tab-${tabId}`);
   if (activeTab) activeTab.classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach((btn) => {
-    btn.classList.remove("bg-[#111827]", "text-white", "shadow-sm", "bg-white", "text-apple-blue");
-    btn.classList.add("text-gray-500");
+    btn.classList.remove("bg-white", "shadow-sm", "text-apple-blue");
+    btn.classList.add("text-gray-600");
   });
   const activeNav = document.getElementById(`btn-tab-${tabId}`);
   if (activeNav) {
-    activeNav.classList.add("bg-[#111827]", "text-white", "shadow-sm");
-    activeNav.classList.remove("text-gray-500");
+    activeNav.classList.add("bg-white", "shadow-sm", "text-apple-blue");
+    activeNav.classList.remove("text-gray-600");
   }
 
   if (tabId === "overview") renderSeatAssyControlBoard();
