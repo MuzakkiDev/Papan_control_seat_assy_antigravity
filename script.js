@@ -465,13 +465,13 @@ function switchTab(tabId) {
   const activeTab = document.getElementById(`tab-${tabId}`);
   if (activeTab) activeTab.classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach((btn) => {
-    btn.classList.remove("bg-white", "shadow-sm", "text-apple-blue");
-    btn.classList.add("text-gray-600");
+    btn.classList.remove("bg-white", "text-[#540b17]", "shadow-md");
+    btn.classList.add("text-rose-100/75");
   });
   const activeNav = document.getElementById(`btn-tab-${tabId}`);
   if (activeNav) {
-    activeNav.classList.add("bg-white", "shadow-sm", "text-apple-blue");
-    activeNav.classList.remove("text-gray-600");
+    activeNav.classList.add("bg-white", "text-[#540b17]", "shadow-md");
+    activeNav.classList.remove("text-rose-100/75");
   }
 
   if (tabId === "overview") renderSeatAssyControlBoard();
@@ -500,15 +500,15 @@ function switchTab(tabId) {
 
 function applyRbacUI() {
   const pCard = document.getElementById("userProfileCard"),
-    gPrompt = document.getElementById("guestLoginPrompt"),
-    gUser = document.getElementById("greetingUserName");
+    gPrompt = document.getElementById("guestLoginPrompt");
   document
     .querySelectorAll(".role-admin, .role-auth")
     .forEach((el) => el.classList.add("hidden"));
   const bWH = document.getElementById("batchBtnGroupWH"),
     bAssy = document.getElementById("batchBtnGroupAssy"),
     bCust = document.getElementById("batchCustWrapper"),
-    btnForce = document.getElementById("btnForceRollover");
+    btnForce = document.getElementById("btnForceRollover"),
+    btnForceNav = document.getElementById("btnForceRolloverNav");
 
   if (currentUser) {
     if (pCard) {
@@ -516,7 +516,6 @@ function applyRbacUI() {
       pCard.classList.add("flex");
     }
     if (gPrompt) gPrompt.classList.add("hidden");
-    if (gUser) gUser.innerText = currentUser.username;
     const uDisplay = document.getElementById("userNameDisplay");
     if (uDisplay) uDisplay.innerText = currentUser.username;
     const rBadge = document.getElementById("userRoleBadge");
@@ -534,10 +533,18 @@ function applyRbacUI() {
         btnForce.classList.remove("hidden");
         btnForce.classList.add("flex");
       }
+      if (btnForceNav) {
+        btnForceNav.classList.remove("hidden");
+        btnForceNav.classList.add("flex");
+      }
     } else {
       if (btnForce) {
         btnForce.classList.add("hidden");
         btnForce.classList.remove("flex");
+      }
+      if (btnForceNav) {
+        btnForceNav.classList.add("hidden");
+        btnForceNav.classList.remove("flex");
       }
     }
     if (bWH && bAssy && bCust) {
@@ -561,10 +568,13 @@ function applyRbacUI() {
       pCard.classList.remove("flex");
     }
     if (gPrompt) gPrompt.classList.remove("hidden");
-    if (gUser) gUser.innerText = "Nixtio";
     if (btnForce) {
       btnForce.classList.add("hidden");
       btnForce.classList.remove("flex");
+    }
+    if (btnForceNav) {
+      btnForceNav.classList.add("hidden");
+      btnForceNav.classList.remove("flex");
     }
   }
 }
@@ -572,6 +582,8 @@ function applyRbacUI() {
 function showSyncSpinner(show) {
   const s = document.getElementById("syncSpinner");
   if (s) s.classList.toggle("animate-spin", show);
+  const sNav = document.getElementById("syncSpinnerNav");
+  if (sNav) sNav.classList.toggle("animate-spin", show);
 }
 function refreshAllData() {
   showSyncSpinner(true);
