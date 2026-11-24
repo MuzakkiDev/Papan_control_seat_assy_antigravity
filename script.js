@@ -471,13 +471,28 @@ function switchTab(tabId) {
   const activeTab = document.getElementById(`tab-${tabId}`);
   if (activeTab) activeTab.classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach((btn) => {
-    btn.classList.remove("bg-white", "text-[#540b17]", "shadow-md");
-    btn.classList.add("text-rose-100/80");
+    btn.classList.remove(
+      "sidebar-nav-active",
+      "bg-[#7A2939]",
+      "border-l-3",
+      "border-[#F3D5A5]",
+      "shadow-sm",
+      "bg-white",
+      "text-[#540b17]",
+      "shadow-md",
+    );
+    btn.classList.add("text-[#F9F3EE]", "hover:bg-[#6B2331]");
   });
   const activeNav = document.getElementById(`btn-tab-${tabId}`);
   if (activeNav) {
-    activeNav.classList.add("bg-white", "text-[#540b17]", "shadow-md");
-    activeNav.classList.remove("text-rose-100/80");
+    activeNav.classList.add(
+      "sidebar-nav-active",
+      "bg-[#7A2939]",
+      "border-l-3",
+      "border-[#F3D5A5]",
+      "shadow-sm",
+    );
+    activeNav.classList.remove("hover:bg-[#6B2331]");
   }
 
   if (tabId === "overview") renderSeatAssyControlBoard();
@@ -1317,9 +1332,45 @@ function promptUpdateQtyOut(partNumber, customerName, currentQtyOut) {
     });
 }
 
+let currentQuickFilter = "all";
+
+function setQuickFilter(filterType) {
+  currentQuickFilter = filterType;
+  document.querySelectorAll(".quick-filter-chip").forEach((chip) => {
+    chip.classList.remove(
+      "bg-[#5A1E2A]",
+      "text-[#F9F3EE]",
+      "border-[#5A1E2A]",
+      "active-filter",
+    );
+    chip.classList.add(
+      "bg-white",
+      "text-[#2C2523]",
+      "border-[#E6E0D6]",
+      "hover:bg-[#F2ECE1]",
+    );
+  });
+  const activeChip = document.getElementById(`chip-filter-${filterType}`);
+  if (activeChip) {
+    activeChip.classList.remove(
+      "bg-white",
+      "text-[#2C2523]",
+      "border-[#E6E0D6]",
+      "hover:bg-[#F2ECE1]",
+    );
+    activeChip.classList.add(
+      "bg-[#5A1E2A]",
+      "text-[#F9F3EE]",
+      "border-[#5A1E2A]",
+      "active-filter",
+    );
+  }
+  renderSeatAssyControlBoard();
+}
+
 function generateTableRowsHtml(subDataset) {
   if (!subDataset || subDataset.length === 0) {
-    return `<tr><td colspan="9" class="py-6 text-center text-gray-400 font-medium">${currentLang === "zh" ? "无数据" : "Tidak ada data"}</td></tr>`;
+    return `<tr><td colspan="9" class="py-6 text-center text-[#7A706A] font-medium">${currentLang === "zh" ? "无数据" : "Tidak ada data"}</td></tr>`;
   }
   const canEditTarget = currentUser !== null;
   const canEditCust =
@@ -1336,45 +1387,43 @@ function generateTableRowsHtml(subDataset) {
   for (let i = 0; i < subDataset.length; i++) {
     let row = subDataset[i];
     const formatNum = (num) => (num === 0 ? "-" : num);
-    let varFormat =
-      row.variance > 0
-        ? "+" + row.variance
-        : row.variance < 0
-          ? row.variance
-          : "-";
-    let varBadge =
-      row.variance > 0
-        ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">${varFormat}</span>`
-        : row.variance < 0
-          ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-200">${varFormat}</span>`
-          : `<span class="text-gray-400 font-medium text-xs">-</span>`;
+
+    // Audit Kontras Status Badges (Aman: #E8F5EE/#1E6B43, Kritis/Habis: #FDECEC/#A62626)
+    let varBadge = "";
+    if (row.variance > 0) {
+      varBadge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#E8F5EE] text-[#1E6B43] border border-[#1E6B43]/20 tabular-nums font-mono">+${row.variance}</span>`;
+    } else if (row.variance < 0) {
+      varBadge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-[#FDECEC] text-[#A62626] border border-[#A62626]/20 tabular-nums font-mono">${row.variance}</span>`;
+    } else {
+      varBadge = `<span class="text-[#7A706A] font-medium text-xs font-mono">-</span>`;
+    }
 
     const custClass = canEditCust
-      ? "cursor-pointer hover:bg-gray-200 transition-colors rounded p-1 inline-block"
+      ? "cursor-pointer hover:bg-[#F2ECE1] transition-colors rounded p-1 inline-block"
       : "";
     const custAction = canEditCust
       ? `onclick="promptUpdateCustomerPart('${row.Part_Number}', '${row.Customer}', ${row.CustomerCount || 1})"`
       : "";
     const stokUtamaClass = canEditStokUtama
-      ? "cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors rounded block py-0.5"
+      ? "cursor-pointer hover:bg-blue-50 hover:text-blue-800 transition-colors rounded block py-0.5"
       : "";
     const stokUtamaAction = canEditStokUtama
       ? `onclick="promptUpdateStokUtama('${row.Part_Number}', ${row.stock})"`
       : "";
     const qtyDayClass = canEditTarget
-      ? "cursor-pointer hover:bg-gray-100 transition-colors rounded block py-0.5"
+      ? "cursor-pointer hover:bg-[#F2ECE1] transition-colors rounded block py-0.5"
       : "";
     const qtyDayAction = canEditTarget
       ? `onclick="promptUpdateQtyDay('${row.Part_Number}', ${row.qty_day}, '${row.Customer}')"`
       : "";
     const qtyOutClass = canEditCust
-      ? "cursor-pointer hover:bg-red-50 hover:text-red-500 transition-colors rounded block py-0.5"
+      ? "cursor-pointer hover:bg-amber-50 hover:text-amber-800 transition-colors rounded block py-0.5"
       : "";
     const qtyOutAction = canEditCust
       ? `onclick="promptUpdateQtyOut('${row.Part_Number}', '${row.Customer}', ${row.qty_out})"`
       : "";
     const assyClass = canEditAssy
-      ? "cursor-pointer hover:bg-purple-50 hover:text-purple-600 transition-colors rounded block py-0.5"
+      ? "cursor-pointer hover:bg-purple-50 hover:text-purple-800 transition-colors rounded block py-0.5"
       : "";
     const assyAction = canEditAssy
       ? `onclick="promptUpdateAssyFsg('${row.Part_Number}', ${row.assy_fsg})"`
@@ -1390,19 +1439,23 @@ function generateTableRowsHtml(subDataset) {
       }
     }
 
-    html += `<tr class="hover:bg-blue-50/40 transition-colors bg-white border-b border-gray-200">`;
+    // Zebra striping dengan hover warm cream
+    html += `<tr class="seat-assy-row border-b border-[#E6E0D6] transition-colors">`;
     if (isFirstOfGroup) {
-      html += `<td rowspan="${rowspan}" class="align-middle font-bold text-gray-800 text-center bg-gray-50 border border-gray-300 px-1 py-1 text-[11px]"><span class="${custClass}" ${custAction} title="Ubah Customer">${row.Customer}</span></td>`;
+      html += `<td rowspan="${rowspan}" class="align-middle font-bold text-[#2C2523] text-center bg-[#F8F5EE] border border-[#E6E0D6] px-1 py-1 text-[11px]"><span class="${custClass}" ${custAction} title="Ubah Customer">${row.Customer}</span></td>`;
     }
     html += `
-      <td class="text-center border border-gray-300 px-1 py-1 font-semibold text-[11px] text-gray-700">${row.No_Rel || "-"}</td>
-      <td class="border border-gray-300 px-2 py-1"><div class="font-bold text-gray-900 text-xs tracking-tight">${row.Part_Number}</div><div class="text-[9px] text-gray-500 uppercase truncate max-w-[130px] font-medium leading-none mt-0.5">${row.nama_barang}</div></td>
-      <td class="text-center font-bold text-blue-700 border border-gray-300 px-1 py-1 text-xs" title="${canEditStokUtama ? (currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama") : ""}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
-      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-xs"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
-      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-xs"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
-      <td class="text-center font-bold text-red-600 border border-gray-300 px-1 py-1 text-xs">${formatNum(row.sisa_del)}</td>
-      <td class="text-center font-bold text-purple-700 border border-gray-300 px-1 py-1 text-xs"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
-      <td class="text-center border border-gray-300 px-1 py-1">${varBadge}</td>
+      <td class="text-center border border-[#E6E0D6] px-1 py-1 font-semibold text-[11px] text-[#2C2523]">${row.No_Rel || "-"}</td>
+      <td class="border border-[#E6E0D6] px-2 py-1">
+        <div class="font-bold text-[#2C2523] text-xs font-mono tracking-tight">${row.Part_Number}</div>
+        <div class="text-[10px] text-[#7A706A] uppercase truncate max-w-[140px] font-medium leading-tight mt-0.5">${row.nama_barang || "-"}</div>
+      </td>
+      <td class="text-center font-bold text-blue-800 border border-[#E6E0D6] px-1 py-1 text-xs tabular-nums font-mono" title="${canEditStokUtama ? (currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama") : ""}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
+      <td class="text-center font-bold text-[#2C2523] border border-[#E6E0D6] px-1 py-1 text-xs tabular-nums font-mono"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
+      <td class="text-center font-bold text-[#2C2523] border border-[#E6E0D6] px-1 py-1 text-xs tabular-nums font-mono"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
+      <td class="text-center font-bold ${row.sisa_del > 0 ? "text-[#A62626]" : "text-[#7A706A]"} border border-[#E6E0D6] px-1 py-1 text-xs tabular-nums font-mono">${formatNum(row.sisa_del)}</td>
+      <td class="text-center font-bold text-purple-800 border border-[#E6E0D6] px-1 py-1 text-xs tabular-nums font-mono"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
+      <td class="text-center border border-[#E6E0D6] px-1 py-1">${varBadge}</td>
     </tr>`;
   }
   return html;
@@ -1416,15 +1469,36 @@ function renderSeatAssyControlBoard(filterKeyword = "") {
   if (!tbodyLeft && !tbodySingle) return;
 
   let dataset = appData.seatAssyControl || [];
-  if (filterKeyword) {
-    const kw = filterKeyword.toLowerCase();
+
+  // 1. Text Search Keyword Filter
+  const kw = (
+    filterKeyword !== undefined &&
+    filterKeyword !== null &&
+    filterKeyword !== ""
+      ? filterKeyword
+      : document.getElementById("globalSearchInput")?.value || ""
+  )
+    .toLowerCase()
+    .trim();
+  if (kw) {
     dataset = dataset.filter(
       (d) =>
         d.Part_Number.toLowerCase().includes(kw) ||
         d.No_Rel.toLowerCase().includes(kw) ||
-        d.Customer.toLowerCase().includes(kw),
+        d.Customer.toLowerCase().includes(kw) ||
+        (d.nama_barang && d.nama_barang.toLowerCase().includes(kw)),
     );
   }
+
+  // 2. Quick Filter Chips
+  if (currentQuickFilter === "sisa_del") {
+    dataset = dataset.filter((d) => Number(d.sisa_del) > 0);
+  } else if (currentQuickFilter === "has_stock") {
+    dataset = dataset.filter(
+      (d) => Number(d.stock) > 0 || Number(d.assy_fsg) > 0,
+    );
+  }
+
   const cntEl = document.getElementById("cntTotalSeatAssy");
   if (cntEl) cntEl.innerText = dataset.length;
 
@@ -1441,7 +1515,7 @@ function renderSeatAssyControlBoard(filterKeyword = "") {
 
   if (tbodyLeft && tbodyRight) {
     if (dataset.length === 0) {
-      const msg = `<tr><td colspan="9" class="py-8 text-center text-gray-400">${currentLang === "zh" ? "无匹配数据..." : "Tidak ada data..."}</td></tr>`;
+      const msg = `<tr><td colspan="9" class="py-8 text-center text-[#7A706A] font-medium">${currentLang === "zh" ? "无匹配数据..." : "Tidak ada data yang cocok..."}</td></tr>`;
       tbodyLeft.innerHTML = msg;
       tbodyRight.innerHTML = msg;
       return;
