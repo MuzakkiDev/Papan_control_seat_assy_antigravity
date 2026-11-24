@@ -1344,13 +1344,13 @@ function generateTableRowsHtml(subDataset) {
           : "-";
     let varBadge =
       row.variance > 0
-        ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-green-50 text-green-700 border border-green-200">${varFormat}</span>`
+        ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">${varFormat}</span>`
         : row.variance < 0
-          ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-red-50 text-red-600 border border-red-200">${varFormat}</span>`
-          : `<span class="text-gray-400 font-medium text-xs">-</span>`;
+          ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">${varFormat}</span>`
+          : `<span class="text-slate-400 font-medium text-xs">-</span>`;
 
     const custClass = canEditCust
-      ? "cursor-pointer hover:bg-gray-200 transition-colors rounded p-1 inline-block"
+      ? "cursor-pointer hover:bg-slate-200 transition-colors rounded p-1 inline-block"
       : "";
     const custAction = canEditCust
       ? `onclick="promptUpdateCustomerPart('${row.Part_Number}', '${row.Customer}', ${row.CustomerCount || 1})"`
@@ -1362,19 +1362,19 @@ function generateTableRowsHtml(subDataset) {
       ? `onclick="promptUpdateStokUtama('${row.Part_Number}', ${row.stock})"`
       : "";
     const qtyDayClass = canEditTarget
-      ? "cursor-pointer hover:bg-gray-100 transition-colors rounded block py-0.5"
+      ? "cursor-pointer hover:bg-slate-100 transition-colors rounded block py-0.5"
       : "";
     const qtyDayAction = canEditTarget
       ? `onclick="promptUpdateQtyDay('${row.Part_Number}', ${row.qty_day}, '${row.Customer}')"`
       : "";
     const qtyOutClass = canEditCust
-      ? "cursor-pointer hover:bg-red-50 hover:text-red-500 transition-colors rounded block py-0.5"
+      ? "cursor-pointer hover:bg-rose-50 hover:text-rose-600 transition-colors rounded block py-0.5"
       : "";
     const qtyOutAction = canEditCust
       ? `onclick="promptUpdateQtyOut('${row.Part_Number}', '${row.Customer}', ${row.qty_out})"`
       : "";
     const assyClass = canEditAssy
-      ? "cursor-pointer hover:bg-purple-50 hover:text-purple-600 transition-colors rounded block py-0.5"
+      ? "cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors rounded block py-0.5"
       : "";
     const assyAction = canEditAssy
       ? `onclick="promptUpdateAssyFsg('${row.Part_Number}', ${row.assy_fsg})"`
@@ -1390,22 +1390,22 @@ function generateTableRowsHtml(subDataset) {
       }
     }
 
-    html += `<tr class="hover:bg-blue-50/40 transition-colors bg-white border-b border-gray-200">`;
+    html += `<tr class="hover:bg-slate-50/80 transition-colors bg-white border-b border-slate-200">`;
     if (isFirstOfGroup) {
-      html += `<td rowspan="${rowspan}" class="align-middle font-bold text-gray-800 text-center bg-gray-50 border border-gray-300 px-1 py-1 text-xs"><span class="${custClass}" ${custAction} title="Ubah Customer">${row.Customer}</span></td>`;
+      html += `<td rowspan="${rowspan}" class="align-middle font-bold text-slate-800 text-center bg-slate-50/70 border border-slate-300 px-1 py-1 text-xs"><span class="${custClass}" ${custAction} title="Ubah Customer">${row.Customer}</span></td>`;
     }
     html += `
-      <td class="text-center border border-gray-300 px-1 py-1 font-semibold text-xs text-gray-700">${row.No_Rel || "-"}</td>
-      <td class="border border-gray-300 px-2 py-1 overflow-hidden">
-        <div class="font-black text-gray-950 text-sm tracking-tight leading-snug truncate" title="${row.Part_Number}">${row.Part_Number}</div>
-        <div class="text-[9.5px] text-gray-500 uppercase truncate font-medium leading-none mt-0.5" title="${row.nama_barang}">${row.nama_barang}</div>
+      <td class="text-center border border-slate-300 px-1 py-1 font-semibold text-xs text-slate-700">${row.No_Rel || "-"}</td>
+      <td class="border border-slate-300 px-2 py-1 overflow-hidden">
+        <div class="font-black text-slate-900 text-sm tracking-tight leading-snug truncate" title="${row.Part_Number}">${row.Part_Number}</div>
+        <div class="text-[9.5px] text-slate-500 uppercase truncate font-medium leading-none mt-0.5" title="${row.nama_barang}">${row.nama_barang}</div>
       </td>
-      <td class="text-center font-bold text-blue-700 border border-gray-300 px-1 py-1 text-sm tabular-nums" title="${canEditStokUtama ? (currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama") : ""}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
-      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
-      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
-      <td class="text-center font-bold text-red-600 border border-gray-300 px-1 py-1 text-sm tabular-nums">${formatNum(row.sisa_del)}</td>
-      <td class="text-center font-bold text-purple-700 border border-gray-300 px-1 py-1 text-sm tabular-nums"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
-      <td class="text-center border border-gray-300 px-1 py-1">${varBadge}</td>
+      <td class="text-center font-bold text-blue-700 border border-slate-300 px-1 py-1 text-sm tabular-nums" title="${canEditStokUtama ? (currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama") : ""}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
+      <td class="text-center font-bold text-slate-800 border border-slate-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
+      <td class="text-center font-bold text-slate-800 border border-slate-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
+      <td class="text-center font-bold text-red-600 border border-slate-300 px-1 py-1 text-sm tabular-nums">${formatNum(row.sisa_del)}</td>
+      <td class="text-center font-bold text-purple-700 border border-slate-300 px-1 py-1 text-sm tabular-nums"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
+      <td class="text-center border border-slate-300 px-1 py-1">${varBadge}</td>
     </tr>`;
   }
   return html;
