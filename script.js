@@ -564,7 +564,8 @@ function applyRbacUI() {
     const rBadge = document.getElementById("userRoleBadge");
     if (rBadge) rBadge.innerText = currentUser.role;
     const aLetter = document.getElementById("avatarLetter");
-    if (aLetter) aLetter.innerText = currentUser.username.charAt(0).toUpperCase();
+    if (aLetter)
+      aLetter.innerText = currentUser.username.charAt(0).toUpperCase();
     document
       .querySelectorAll(".role-auth")
       .forEach((el) => el.classList.remove("hidden"));
@@ -1527,41 +1528,47 @@ function generateTableRowsHtml(subDataset) {
 
     const custAction = canEditCust
       ? `onclick="promptUpdateCustomerPart('${row.Part_Number}', '${row.Customer}', ${row.CustomerCount || 1})"`
-      : (currentUser
-          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah Customer')"`
-          : `onclick="promptLoginToEdit('Customer')"`);
-    const custClass = "cursor-pointer hover:bg-slate-200 transition-colors rounded p-1 inline-block";
+      : currentUser
+        ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah Customer')"`
+        : `onclick="promptLoginToEdit('Customer')"`;
+    const custClass =
+      "cursor-pointer hover:bg-slate-200 transition-colors rounded p-1 inline-block";
 
     const stokUtamaAction = canEditStokUtama
       ? `onclick="promptUpdateStokUtama('${row.Part_Number}', ${row.stock})"`
-      : (currentUser
-          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah Stok Utama')"`
-          : `onclick="promptLoginToEdit('Stok Utama')"`);
-    const stokUtamaClass = "cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors rounded block py-0.5";
+      : currentUser
+        ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah Stok Utama')"`
+        : `onclick="promptLoginToEdit('Stok Utama')"`;
+    const stokUtamaClass =
+      "cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors rounded block py-0.5";
 
     const qtyDayAction = canEditTarget
       ? `onclick="promptUpdateQtyDay('${row.Part_Number}', ${row.qty_day}, '${row.Customer}')"`
       : `onclick="promptLoginToEdit('Target QTY/DAY')"`;
-    const qtyDayClass = "cursor-pointer hover:bg-slate-100 transition-colors rounded block py-0.5";
+    const qtyDayClass =
+      "cursor-pointer hover:bg-slate-100 transition-colors rounded block py-0.5";
 
     const qtyOutAction = canEditCust
       ? `onclick="promptUpdateQtyOut('${row.Part_Number}', '${row.Customer}', ${row.qty_out})"`
-      : (currentUser
-          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah QTY OUT')"`
-          : `onclick="promptLoginToEdit('QTY OUT')"`);
-    const qtyOutClass = "cursor-pointer hover:bg-rose-50 hover:text-rose-600 transition-colors rounded block py-0.5";
+      : currentUser
+        ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Warehouse yang dapat mengubah QTY OUT')"`
+        : `onclick="promptLoginToEdit('QTY OUT')"`;
+    const qtyOutClass =
+      "cursor-pointer hover:bg-rose-50 hover:text-rose-600 transition-colors rounded block py-0.5";
 
     const sisaDelAction = canEditTarget
       ? `onclick="promptUpdateSisaDel('${row.Part_Number}', ${row.sisa_del}, ${row.qty_day}, ${row.qty_out}, '${row.Customer}')"`
       : `onclick="promptLoginToEdit('Sisa Delivery')"`;
-    const sisaDelClass = "cursor-pointer hover:bg-red-50 hover:text-red-700 transition-colors rounded block py-0.5";
+    const sisaDelClass =
+      "cursor-pointer hover:bg-red-50 hover:text-red-700 transition-colors rounded block py-0.5";
 
     const assyAction = canEditAssy
       ? `onclick="promptUpdateAssyFsg('${row.Part_Number}', ${row.assy_fsg})"`
-      : (currentUser
-          ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Produksi yang dapat mengubah Stok Assy')"`
-          : `onclick="promptLoginToEdit('Stok Assy')`);
-    const assyClass = "cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors rounded block py-0.5";
+      : currentUser
+        ? `onclick="showToast('warning', 'Akses Ditolak', 'Hanya Admin / Produksi yang dapat mengubah Stok Assy')"`
+        : `onclick="promptLoginToEdit('Stok Assy')`;
+    const assyClass =
+      "cursor-pointer hover:bg-purple-50 hover:text-purple-700 transition-colors rounded block py-0.5";
 
     let isFirstOfGroup = false,
       rowspan = 1;
@@ -2745,10 +2752,7 @@ function handleLoginSubmit(e) {
           "sim_inventory_user",
           JSON.stringify(currentUser),
         );
-        localStorage.setItem(
-          "sim_inventory_user",
-          JSON.stringify(currentUser),
-        );
+        localStorage.setItem("sim_inventory_user", JSON.stringify(currentUser));
         applyRbacUI();
         closeLoginModal();
         switchTab("scanner");
