@@ -136,7 +136,8 @@ function applyLang() {
 // KONFIGURASI GOOGLE APPS SCRIPT WEB APP (DATABASE GOOGLE SHEETS)
 // =========================================================================
 // ⚠️ GANTI DENGAN URL WEB APP HASIL DEPLOY APPS SCRIPT ANDA (/exec) ⚠️
-const GAS_WEBAPP_URL = "PASTE_URL_WEB_APP_ANDA_DISINI";
+const GAS_WEBAPP_URL =
+  "https://script.google.com/macros/s/AKfycbz4uVDIz5EEa1t8XfinFJjm4hl1L9ft2ED1e5XoINERwavIgR_WNSTG9VHJt_HSWPdD/exec";
 
 let currentUser = null,
   appData = {
@@ -222,21 +223,23 @@ window.addEventListener("DOMContentLoaded", () => {
       (usersTab && !usersTab.classList.contains("hidden"))
     ) {
       isBackgroundSyncing = true;
-      sendToBackend("apiGetMasterData").then(async (res) => {
-        isBackgroundSyncing = false;
-        if (res && res.success) {
-          appData.barang = res.barang || [];
-          appData.customer = res.customer || [];
-          appData.orders = res.orders || [];
-          appData.masuk = res.masuk || [];
-          appData.keluar = res.keluar || [];
-          appData.users = res.users || [];
-          buildSeatAssyControlDataset();
-          refreshAllUI();
-        }
-      }).catch(() => {
-        isBackgroundSyncing = false;
-      });
+      sendToBackend("apiGetMasterData")
+        .then(async (res) => {
+          isBackgroundSyncing = false;
+          if (res && res.success) {
+            appData.barang = res.barang || [];
+            appData.customer = res.customer || [];
+            appData.orders = res.orders || [];
+            appData.masuk = res.masuk || [];
+            appData.keluar = res.keluar || [];
+            appData.users = res.users || [];
+            buildSeatAssyControlDataset();
+            refreshAllUI();
+          }
+        })
+        .catch(() => {
+          isBackgroundSyncing = false;
+        });
     }
   }, 15000);
 });
@@ -436,17 +439,23 @@ function startLiveClock() {
 function toggleSidebar() {
   const sb = document.getElementById("mainSidebar"),
     bd = document.getElementById("sidebarBackdrop");
+  if (!sb) return;
   if (sb.classList.contains("-translate-x-full")) {
     sb.classList.remove("-translate-x-full");
-    bd.classList.remove("opacity-0", "pointer-events-none");
-    bd.classList.add("opacity-100");
+    if (bd) {
+      bd.classList.remove("opacity-0", "pointer-events-none");
+      bd.classList.add("opacity-100");
+    }
   } else closeSidebar();
 }
 function closeSidebar() {
-  document.getElementById("mainSidebar").classList.add("-translate-x-full");
+  const sb = document.getElementById("mainSidebar");
+  if (sb) sb.classList.add("-translate-x-full");
   const bd = document.getElementById("sidebarBackdrop");
-  bd.classList.add("opacity-0", "pointer-events-none");
-  bd.classList.remove("opacity-100");
+  if (bd) {
+    bd.classList.add("opacity-0", "pointer-events-none");
+    bd.classList.remove("opacity-100");
+  }
 }
 
 function switchTab(tabId) {
@@ -456,13 +465,13 @@ function switchTab(tabId) {
   const activeTab = document.getElementById(`tab-${tabId}`);
   if (activeTab) activeTab.classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach((btn) => {
-    btn.classList.remove("bg-white", "shadow-sm", "text-apple-blue");
-    btn.classList.add("text-gray-600");
+    btn.classList.remove("bg-[#111827]", "text-white", "shadow-sm", "bg-white", "text-apple-blue");
+    btn.classList.add("text-gray-500");
   });
   const activeNav = document.getElementById(`btn-tab-${tabId}`);
   if (activeNav) {
-    activeNav.classList.add("bg-white", "shadow-sm", "text-apple-blue");
-    activeNav.classList.remove("text-gray-600");
+    activeNav.classList.add("bg-[#111827]", "text-white", "shadow-sm");
+    activeNav.classList.remove("text-gray-500");
   }
 
   if (tabId === "overview") renderSeatAssyControlBoard();
@@ -491,7 +500,8 @@ function switchTab(tabId) {
 
 function applyRbacUI() {
   const pCard = document.getElementById("userProfileCard"),
-    gPrompt = document.getElementById("guestLoginPrompt");
+    gPrompt = document.getElementById("guestLoginPrompt"),
+    gUser = document.getElementById("greetingUserName");
   document
     .querySelectorAll(".role-admin, .role-auth")
     .forEach((el) => el.classList.add("hidden"));
@@ -501,14 +511,18 @@ function applyRbacUI() {
     btnForce = document.getElementById("btnForceRollover");
 
   if (currentUser) {
-    pCard.classList.remove("hidden");
-    pCard.classList.add("flex");
-    gPrompt.classList.add("hidden");
-    document.getElementById("userNameDisplay").innerText = currentUser.username;
-    document.getElementById("userRoleBadge").innerText = currentUser.role;
-    document.getElementById("avatarLetter").innerText = currentUser.username
-      .charAt(0)
-      .toUpperCase();
+    if (pCard) {
+      pCard.classList.remove("hidden");
+      pCard.classList.add("flex");
+    }
+    if (gPrompt) gPrompt.classList.add("hidden");
+    if (gUser) gUser.innerText = currentUser.username;
+    const uDisplay = document.getElementById("userNameDisplay");
+    if (uDisplay) uDisplay.innerText = currentUser.username;
+    const rBadge = document.getElementById("userRoleBadge");
+    if (rBadge) rBadge.innerText = currentUser.role;
+    const aLetter = document.getElementById("avatarLetter");
+    if (aLetter) aLetter.innerText = currentUser.username.charAt(0).toUpperCase();
     document
       .querySelectorAll(".role-auth")
       .forEach((el) => el.classList.remove("hidden"));
@@ -542,9 +556,12 @@ function applyRbacUI() {
       }
     }
   } else {
-    pCard.classList.add("hidden");
-    pCard.classList.remove("flex");
-    gPrompt.classList.remove("hidden");
+    if (pCard) {
+      pCard.classList.add("hidden");
+      pCard.classList.remove("flex");
+    }
+    if (gPrompt) gPrompt.classList.remove("hidden");
+    if (gUser) gUser.innerText = "Nixtio";
     if (btnForce) {
       btnForce.classList.add("hidden");
       btnForce.classList.remove("flex");
@@ -563,16 +580,56 @@ function refreshAllData() {
 
 const DEFAULT_BOARD_RAW = [
   // YIMM
-  { cust: "YIMM", rel: "A.01 - A.07", part: "BWP-F4730-00", nama: "SEAT ASSY BWP-00" },
-  { cust: "YIMM", rel: "A.08 - A.13", part: "BJM-F4730-00", nama: "SEAT ASSY BJM-00" },
-  { cust: "YIMM", rel: "A.14/16", part: "BWP-F4730-10", nama: "SEAT ASSY BWP-10" },
-  { cust: "YIMM", rel: "A.15 - A.17", part: "BJM-F4730-10", nama: "SEAT ASSY BJM-10" },
-  { cust: "YIMM", rel: "A.18 - A.21", part: "BEJ-F4730-20", nama: "SEAT ASSY BEJ-20" },
-  { cust: "YIMM", rel: "A.22 - A.24", part: "BXY-F4730-00", nama: "SEAT ASSY BXY-00" },
+  {
+    cust: "YIMM",
+    rel: "A.01 - A.07",
+    part: "BWP-F4730-00",
+    nama: "SEAT ASSY BWP-00",
+  },
+  {
+    cust: "YIMM",
+    rel: "A.08 - A.13",
+    part: "BJM-F4730-00",
+    nama: "SEAT ASSY BJM-00",
+  },
+  {
+    cust: "YIMM",
+    rel: "A.14/16",
+    part: "BWP-F4730-10",
+    nama: "SEAT ASSY BWP-10",
+  },
+  {
+    cust: "YIMM",
+    rel: "A.15 - A.17",
+    part: "BJM-F4730-10",
+    nama: "SEAT ASSY BJM-10",
+  },
+  {
+    cust: "YIMM",
+    rel: "A.18 - A.21",
+    part: "BEJ-F4730-20",
+    nama: "SEAT ASSY BEJ-20",
+  },
+  {
+    cust: "YIMM",
+    rel: "A.22 - A.24",
+    part: "BXY-F4730-00",
+    nama: "SEAT ASSY BXY-00",
+  },
   { cust: "YIMM", rel: "A.25", part: "BEJ-F4730-30", nama: "SEAT ASSY BEJ-30" },
   { cust: "YIMM", rel: "A.26", part: "B3W-F4730-01", nama: "SEAT ASSY B3W-01" },
-  { cust: "YIMM", rel: "A.27 - A.28", part: "BXY-F4730-10", nama: "SEAT ASSY BXY-10" },
-  { cust: "YIMM", rel: "A.29 - A.30", part: "BBP-F4730-00", nama: "SEAT ASSY BBP-00" },
+  {
+    cust: "YIMM",
+    rel: "A.27 - A.28",
+    part: "BXY-F4730-10",
+    nama: "SEAT ASSY BXY-10",
+  },
+  {
+    cust: "YIMM",
+    rel: "A.29 - A.30",
+    part: "BBP-F4730-00",
+    nama: "SEAT ASSY BBP-00",
+  },
   { cust: "YIMM", rel: "A.31", part: "1DY-F4730-02", nama: "SEAT ASSY 1DY-02" },
   { cust: "YIMM", rel: "A.32", part: "BDL-F4730-00", nama: "SEAT ASSY BDL-00" },
   { cust: "YIMM", rel: "A.34", part: "BNU-F4710-00", nama: "SEAT ASSY BNU-10" },
@@ -585,52 +642,207 @@ const DEFAULT_BOARD_RAW = [
   { cust: "YIMM", rel: "A.38", part: "BDJ-F4750-10", nama: "SEAT ASSY BDJ-50" },
 
   // SIM
-  { cust: "SIM", rel: "A.39", part: "45100-45H30-PR7", nama: "SEAT ASSY 45H30-PR7" },
-  { cust: "SIM", rel: "A.39", part: "45100-22J00-W3A", nama: "SEAT ASSY 22J00-W3A" },
-  { cust: "SIM", rel: "A.40", part: "45100-25G20-HES", nama: "SEAT ASSY 25G20-HES" },
+  {
+    cust: "SIM",
+    rel: "A.39",
+    part: "45100-45H30-PR7",
+    nama: "SEAT ASSY 45H30-PR7",
+  },
+  {
+    cust: "SIM",
+    rel: "A.39",
+    part: "45100-22J00-W3A",
+    nama: "SEAT ASSY 22J00-W3A",
+  },
+  {
+    cust: "SIM",
+    rel: "A.40",
+    part: "45100-25G20-HES",
+    nama: "SEAT ASSY 25G20-HES",
+  },
 
   // KMI
-  { cust: "KMI", rel: "A.41", part: "53066-0896", nama: "SEAT ASSY 53066-0896" },
-  { cust: "KMI", rel: "A.41", part: "53066-0898", nama: "SEAT ASSY 53066-0898" },
-  { cust: "KMI", rel: "A.41", part: "53066-0860 MA", nama: "SEAT ASSY 53066-0860 MA" },
-  { cust: "KMI", rel: "A.41", part: "53066-0861 12Y", nama: "SEAT ASSY 53066-0861 12Y" },
-  { cust: "KMI", rel: "A.41", part: "53066-1088 MA", nama: "SEAT ASSY 53066-1088 MA" },
-  { cust: "KMI", rel: "A.41", part: "53066-1090 MA", nama: "SEAT ASSY 53066-1090 MA" },
-  { cust: "KMI", rel: "A.41", part: "53066-1091 MA", nama: "SEAT ASSY 53066-1091 MA" },
-  { cust: "KMI", rel: "A.41", part: "53066-1089 12Y", nama: "SEAT ASSY 53066-1089 12Y" },
-  { cust: "KMI", rel: "A.41", part: "53066-0904 336", nama: "SEAT ASSY 53066-0904 336" },
-  { cust: "KMI", rel: "A.41", part: "53066-0904-61U", nama: "SEAT ASSY 53066-0904-61U" },
-  { cust: "KMI", rel: "A.41", part: "53066-0904 0927", nama: "SEAT ASSY 53066-0904 0927" },
-  { cust: "KMI", rel: "A.43", part: "53066-0905 336", nama: "SEAT ASSY 53066-0905 336" },
-  { cust: "KMI", rel: "A.43", part: "53066-0905 61U", nama: "SEAT ASSY 53066-0905 61U" },
-  { cust: "KMI", rel: "A.43", part: "53066-0905 MA", nama: "SEAT ASSY 53066-0905 MA" },
-  { cust: "KMI", rel: "A.43", part: "53066-0905 0928", nama: "SEAT ASSY 53066-0905 0928" },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-0896",
+    nama: "SEAT ASSY 53066-0896",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-0898",
+    nama: "SEAT ASSY 53066-0898",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-0860 MA",
+    nama: "SEAT ASSY 53066-0860 MA",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-0861 12Y",
+    nama: "SEAT ASSY 53066-0861 12Y",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-1088 MA",
+    nama: "SEAT ASSY 53066-1088 MA",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-1090 MA",
+    nama: "SEAT ASSY 53066-1090 MA",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-1091 MA",
+    nama: "SEAT ASSY 53066-1091 MA",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-1089 12Y",
+    nama: "SEAT ASSY 53066-1089 12Y",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-0904 336",
+    nama: "SEAT ASSY 53066-0904 336",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-0904-61U",
+    nama: "SEAT ASSY 53066-0904-61U",
+  },
+  {
+    cust: "KMI",
+    rel: "A.41",
+    part: "53066-0904 0927",
+    nama: "SEAT ASSY 53066-0904 0927",
+  },
+  {
+    cust: "KMI",
+    rel: "A.43",
+    part: "53066-0905 336",
+    nama: "SEAT ASSY 53066-0905 336",
+  },
+  {
+    cust: "KMI",
+    rel: "A.43",
+    part: "53066-0905 61U",
+    nama: "SEAT ASSY 53066-0905 61U",
+  },
+  {
+    cust: "KMI",
+    rel: "A.43",
+    part: "53066-0905 MA",
+    nama: "SEAT ASSY 53066-0905 MA",
+  },
+  {
+    cust: "KMI",
+    rel: "A.43",
+    part: "53066-0905 0928",
+    nama: "SEAT ASSY 53066-0905 0928",
+  },
 
   // TVS
-  { cust: "TVS", rel: "A.44", part: "R3130220 TVSN101.W", nama: "SEAT ASSY TVSN101.W" },
-  { cust: "TVS", rel: "A.44", part: "R3130190-TVSN101.R", nama: "SEAT ASSY TVSN101.R" },
-  { cust: "TVS", rel: "A.45", part: "R1130190 TVSU358", nama: "SEAT ASSY TVSU358" },
-  { cust: "TVS", rel: "A.46", part: "NA130010 TVSMAX", nama: "SEAT ASSY TVSMAX" },
-  { cust: "TVS", rel: "A.46", part: "R3130230 TVSU313", nama: "SEAT ASSY TVSU313" },
-  { cust: "TVS", rel: "A.46", part: "R4130020 TVSN100", nama: "SEAT ASSY TVSN100" },
-  { cust: "TVS", rel: "A.46", part: "R1322380 SEAT BASE", nama: "SEAT BASE TVS" },
+  {
+    cust: "TVS",
+    rel: "A.44",
+    part: "R3130220 TVSN101.W",
+    nama: "SEAT ASSY TVSN101.W",
+  },
+  {
+    cust: "TVS",
+    rel: "A.44",
+    part: "R3130190-TVSN101.R",
+    nama: "SEAT ASSY TVSN101.R",
+  },
+  {
+    cust: "TVS",
+    rel: "A.45",
+    part: "R1130190 TVSU358",
+    nama: "SEAT ASSY TVSU358",
+  },
+  {
+    cust: "TVS",
+    rel: "A.46",
+    part: "NA130010 TVSMAX",
+    nama: "SEAT ASSY TVSMAX",
+  },
+  {
+    cust: "TVS",
+    rel: "A.46",
+    part: "R3130230 TVSU313",
+    nama: "SEAT ASSY TVSU313",
+  },
+  {
+    cust: "TVS",
+    rel: "A.46",
+    part: "R4130020 TVSN100",
+    nama: "SEAT ASSY TVSN100",
+  },
+  {
+    cust: "TVS",
+    rel: "A.46",
+    part: "R1322380 SEAT BASE",
+    nama: "SEAT BASE TVS",
+  },
   { cust: "TVS", rel: "A.46", part: "Y4D Grey", nama: "SEAT ASSY Y4D GREY" },
 
   // OTHER PART ALL ITEM
   { cust: "ALL CUSTOMER", rel: "-", part: "P.T", nama: "PART P.T" },
-  { cust: "ALL CUSTOMER", rel: "-", part: "Seat Base N100", nama: "SEAT BASE N100" },
-  { cust: "ALL CUSTOMER", rel: "-", part: "Assy PP 4313", nama: "ASSY PP 4313" },
+  {
+    cust: "ALL CUSTOMER",
+    rel: "-",
+    part: "Seat Base N100",
+    nama: "SEAT BASE N100",
+  },
+  {
+    cust: "ALL CUSTOMER",
+    rel: "-",
+    part: "Assy PP 4313",
+    nama: "ASSY PP 4313",
+  },
   { cust: "ALL CUSTOMER", rel: "A.47", part: "XT 604", nama: "PART XT 604" },
-  { cust: "ALL CUSTOMER", rel: "A.47", part: "N27", nama: "PART N27" }
+  { cust: "ALL CUSTOMER", rel: "A.47", part: "N27", nama: "PART N27" },
 ];
 
 function applyDefaultBoardData() {
   appData.customer = [
-    { id_customer: "YIMM", nama_customer: "YAMAHA (YIMM)", alamat: "Pulo Gadung / Karawang" },
-    { id_customer: "SIM", nama_customer: "SUZUKI (SIM)", alamat: "Tambun, Bekasi" },
-    { id_customer: "KMI", nama_customer: "KAWASAKI (KMI)", alamat: "Pulo Gadung / Cibitung" },
-    { id_customer: "TVS", nama_customer: "TVS MOTOR (TVS)", alamat: "Karawang, Jawa Barat" },
-    { id_customer: "ALL CUSTOMER", nama_customer: "ALL CUSTOMER", alamat: "Other Part All Item" }
+    {
+      id_customer: "YIMM",
+      nama_customer: "YAMAHA (YIMM)",
+      alamat: "Pulo Gadung / Karawang",
+    },
+    {
+      id_customer: "SIM",
+      nama_customer: "SUZUKI (SIM)",
+      alamat: "Tambun, Bekasi",
+    },
+    {
+      id_customer: "KMI",
+      nama_customer: "KAWASAKI (KMI)",
+      alamat: "Pulo Gadung / Cibitung",
+    },
+    {
+      id_customer: "TVS",
+      nama_customer: "TVS MOTOR (TVS)",
+      alamat: "Karawang, Jawa Barat",
+    },
+    {
+      id_customer: "ALL CUSTOMER",
+      nama_customer: "ALL CUSTOMER",
+      alamat: "Other Part All Item",
+    },
   ];
 
   appData.barang = DEFAULT_BOARD_RAW.map((item) => ({
@@ -638,14 +850,14 @@ function applyDefaultBoardData() {
     nama_barang: item.nama,
     No_Rel: item.rel,
     stok: 0,
-    assy_fsg: 0
+    assy_fsg: 0,
   }));
 
   appData.orders = DEFAULT_BOARD_RAW.map((item, idx) => ({
     id: "def_ord_" + (idx + 1),
     Part_Number: item.part,
     id_customer: item.cust,
-    qty_order: 0
+    qty_order: 0,
   }));
 
   buildSeatAssyControlDataset();
@@ -670,8 +882,17 @@ function loadInitialOrMockData() {
       } else {
         // Jika backend belum siap/kosong, otomatis tampilkan 51 part papan kontrol dengan stok 0
         applyDefaultBoardData();
-        if (res && !res.success && res.message && !res.message.includes("belum dikonfigurasi")) {
-          showToast("info", "Papan Kontrol Siap", "Menampilkan 51 Part Number fisik (Stok & Target kosong)");
+        if (
+          res &&
+          !res.success &&
+          res.message &&
+          !res.message.includes("belum dikonfigurasi")
+        ) {
+          showToast(
+            "info",
+            "Papan Kontrol Siap",
+            "Menampilkan 51 Part Number fisik (Stok & Target kosong)",
+          );
         }
       }
     })
