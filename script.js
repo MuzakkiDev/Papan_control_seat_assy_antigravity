@@ -437,25 +437,31 @@ function startLiveClock() {
   }, 1000);
 }
 function toggleSidebar() {
-  const sb = document.getElementById("mainSidebar"),
-    bd = document.getElementById("sidebarBackdrop");
+  toggleSidebarPin();
+}
+function toggleSidebarPin() {
+  const sb = document.getElementById("mainSidebar");
+  const main = document.querySelector("main");
+  const pinIcon = document.getElementById("sidebarPinIcon");
   if (!sb) return;
-  if (sb.classList.contains("-translate-x-full")) {
-    sb.classList.remove("-translate-x-full");
-    if (bd) {
-      bd.classList.remove("opacity-0", "pointer-events-none");
-      bd.classList.add("opacity-100");
+  sb.classList.toggle("sidebar-pinned");
+  const isPinned = sb.classList.contains("sidebar-pinned");
+  if (isPinned) {
+    if (main) {
+      main.classList.remove("pl-[68px]");
+      main.classList.add("pl-[260px]");
     }
-  } else closeSidebar();
+    if (pinIcon) pinIcon.classList.add("text-white", "rotate-45");
+  } else {
+    if (main) {
+      main.classList.remove("pl-[260px]");
+      main.classList.add("pl-[68px]");
+    }
+    if (pinIcon) pinIcon.classList.remove("text-white", "rotate-45");
+  }
 }
 function closeSidebar() {
-  const sb = document.getElementById("mainSidebar");
-  if (sb) sb.classList.add("-translate-x-full");
-  const bd = document.getElementById("sidebarBackdrop");
-  if (bd) {
-    bd.classList.add("opacity-0", "pointer-events-none");
-    bd.classList.remove("opacity-100");
-  }
+  // Biarkan sidebar hover beroperasi normal
 }
 
 function switchTab(tabId) {
@@ -466,12 +472,12 @@ function switchTab(tabId) {
   if (activeTab) activeTab.classList.remove("hidden");
   document.querySelectorAll(".nav-item").forEach((btn) => {
     btn.classList.remove("bg-white", "text-[#540b17]", "shadow-md");
-    btn.classList.add("text-rose-100/75");
+    btn.classList.add("text-rose-100/80");
   });
   const activeNav = document.getElementById(`btn-tab-${tabId}`);
   if (activeNav) {
     activeNav.classList.add("bg-white", "text-[#540b17]", "shadow-md");
-    activeNav.classList.remove("text-rose-100/75");
+    activeNav.classList.remove("text-rose-100/80");
   }
 
   if (tabId === "overview") renderSeatAssyControlBoard();

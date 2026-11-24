@@ -225,17 +225,46 @@
         border-color: #0071e3 !important;
       }
 
-      /* Burgundy Floating Pill Sidebar */
-      .burgundy-gradient {
-        background: linear-gradient(180deg, #6b1224 0%, #540b17 50%, #3b0710 100%);
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        box-shadow: 0 12px 36px rgba(59, 7, 16, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      /* Chrome-style Burgundy Expanding Sidebar */
+      #mainSidebar {
+        width: 68px;
+        background: linear-gradient(180deg, #58111a 0%, #450a14 50%, #30050d 100%);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+        transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.28s ease;
+        z-index: 50;
       }
-      .burgundy-pill {
-        background: linear-gradient(180deg, #641021 0%, #4d0a15 100%);
-        border: 1px solid rgba(255, 255, 255, 0.14);
-        box-shadow: 0 8px 24px rgba(59, 7, 16, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+      #mainSidebar:hover,
+      #mainSidebar.sidebar-pinned {
+        width: 260px;
+        box-shadow: 12px 0 40px rgba(0, 0, 0, 0.45);
       }
+      #mainSidebar .sidebar-label {
+        opacity: 0;
+        max-width: 0;
+        transform: translateX(-6px);
+        white-space: nowrap;
+        overflow: hidden;
+        transition: opacity 0.22s ease, transform 0.22s ease, max-width 0.28s ease;
+      }
+      #mainSidebar:hover .sidebar-label,
+      #mainSidebar.sidebar-pinned .sidebar-label {
+        opacity: 1;
+        max-width: 190px;
+        transform: translateX(0);
+      }
+      #mainSidebar .sidebar-divider-text {
+        opacity: 0;
+        height: 0;
+        overflow: hidden;
+        transition: opacity 0.22s ease, height 0.22s ease;
+      }
+      #mainSidebar:hover .sidebar-divider-text,
+      #mainSidebar.sidebar-pinned .sidebar-divider-text {
+        opacity: 1;
+        height: auto;
+      }
+
       .no-scrollbar::-webkit-scrollbar {
         display: none;
       }
@@ -249,227 +278,216 @@
   <body
     class="antialiased min-h-screen flex flex-col relative overflow-x-hidden bg-[#f5f5f7]"
   >
-    <div
-      id="sidebarBackdrop"
-      onclick="closeSidebar()"
-      class="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden"
-    ></div>
-
-    <!-- BURGUNDY FLOATING SIDEBAR DOCK -->
+    <!-- BURGUNDY CHROME-STYLE EXPANDING SIDEBAR -->
     <aside
       id="mainSidebar"
-      class="fixed inset-y-0 left-0 lg:left-4 lg:top-4 lg:bottom-4 z-50 w-20 flex flex-col items-center justify-between py-4 sm:py-5 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out pointer-events-auto"
+      class="fixed inset-y-0 left-0 flex flex-col justify-between h-screen group overflow-hidden pointer-events-auto"
     >
-      <!-- TOP SECTION: LOGO & TOGGLES -->
-      <div class="flex flex-col items-center gap-2.5 w-full">
-        <!-- 1. LOGO PILL -->
-        <div
-          class="burgundy-pill w-13 h-13 rounded-2xl flex flex-col items-center justify-center p-2 relative group cursor-pointer shadow-lg hover:scale-105 transition-all"
-          onclick="switchTab('overview')"
-          title="SIM-INVENTORY"
-        >
-          <div class="w-8 h-8 rounded-xl bg-white/15 flex items-center justify-center text-white text-base">
+      <!-- 1. TOP LOGO SECTION -->
+      <div class="p-3 border-b border-rose-900/40 flex items-center justify-between min-h-[64px]">
+        <div class="flex items-center min-w-0 cursor-pointer" onclick="switchTab('overview')">
+          <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center text-white text-lg flex-shrink-0 shadow-sm border border-white/10">
             <i class="fa-solid fa-cube text-rose-200"></i>
           </div>
-          <span class="text-[8px] font-black tracking-widest text-white/90 uppercase mt-0.5 leading-none">SIM</span>
-          
-          <!-- Tooltip -->
-          <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-            SIM-INVENTORY <span class="text-rose-400 font-normal">Seat Assy</span>
+          <div class="sidebar-label flex flex-col ml-3 min-w-0">
+            <span class="font-bold text-white text-sm tracking-tight leading-tight">SIM-INVENTORY</span>
+            <span class="text-[9px] text-rose-300 font-semibold tracking-wider uppercase">Seat Assy Control</span>
           </div>
         </div>
-
-        <!-- 2. TOGGLES PILL (Sun/Moon, Lang, Rollover) -->
-        <div class="burgundy-pill w-12 rounded-full py-2 px-1 flex flex-col items-center gap-1.5 shadow-md">
-          <!-- Toggle Bahasa (ID / ZH) -->
-          <button
-            onclick="toggleLang()"
-            class="w-8 h-8 rounded-full flex items-center justify-center text-rose-200 hover:text-white hover:bg-white/15 transition-all relative group"
-            title="Ubah Bahasa / 切换语言"
-          >
-            <i class="fa-solid fa-language text-xs"></i>
-            <div class="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-gray-950 text-white text-xs font-medium whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Ganti Bahasa (ID / 中文)
-            </div>
-          </button>
-          
-          <!-- Mode Tutup Buku / Rollover -->
-          <button
-            onclick="triggerForceRollover()"
-            id="btnForceRolloverNav"
-            class="role-admin hidden w-8 h-8 rounded-full flex items-center justify-center text-rose-300 hover:text-rose-100 hover:bg-red-500/20 transition-all relative group"
-            title="Tutup Buku Manual / 手动结算"
-          >
-            <i class="fa-solid fa-bolt text-xs"></i>
-            <div class="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-gray-950 text-white text-xs font-medium whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Tutup Buku Harian
-            </div>
-          </button>
-        </div>
+        <!-- Pin Toggle Button -->
+        <button
+          onclick="toggleSidebarPin()"
+          class="sidebar-label text-rose-300/70 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+          title="Kunci Sidebar (Pin / Unpin)"
+          id="btnPinSidebar"
+        >
+          <i class="fa-solid fa-thumbtack text-xs transition-transform" id="sidebarPinIcon"></i>
+        </button>
       </div>
 
-      <!-- CENTER SECTION: MAIN NAVIGATION PILL (TALL CAPSULE) -->
-      <div class="my-auto py-2">
-        <nav
-          class="burgundy-gradient w-14 rounded-full py-3 px-1.5 flex flex-col items-center gap-2 shadow-2xl overflow-y-auto no-scrollbar max-h-[58vh]"
+      <!-- 2. NAVIGATION LIST (ICONS + TEXT SLIDE-IN) -->
+      <div class="flex-1 overflow-y-auto no-scrollbar py-3 px-2 space-y-1">
+        <!-- Section Header -->
+        <div class="sidebar-divider-text px-2.5 pb-1 text-[10px] font-bold text-rose-300/60 uppercase tracking-wider" data-i18n="nav_ops">
+          Operasional
+        </div>
+
+        <!-- Overview / Papan Kontrol -->
+        <button
+          onclick="switchTab('overview')"
+          id="btn-tab-overview"
+          class="nav-item flex items-center w-full px-2.5 py-2.5 rounded-xl transition-all duration-200 bg-white text-[#540b17] shadow-md"
+          title="Papan Kontrol Seat Assy"
         >
-          <!-- 1. Overview / Papan Kontrol -->
-          <button
-            onclick="switchTab('overview')"
-            id="btn-tab-overview"
-            class="nav-item w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 relative group bg-white text-[#540b17] shadow-md"
-            title="Papan Kontrol Seat Assy"
-          >
-            <i class="fa-solid fa-table-cells-large text-sm"></i>
-            <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Papan Kontrol Seat Assy
-            </div>
-          </button>
+          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+            <i class="fa-solid fa-table-cells-large text-base"></i>
+          </div>
+          <span class="sidebar-label ml-2.5 text-xs font-bold leading-none" data-i18n="nav_board">
+            Papan Kontrol
+          </span>
+        </button>
 
-          <!-- 2. Smart Scanner -->
-          <button
-            onclick="switchTab('scanner')"
-            id="btn-tab-scanner"
-            class="role-auth hidden nav-item w-10 h-10 rounded-full flex items-center justify-center text-rose-100/75 hover:text-white hover:bg-white/15 transition-all duration-200 relative group"
-            title="Smart Scanner & Trolley"
-          >
-            <i class="fa-solid fa-barcode text-sm"></i>
-            <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Smart Barcode Scanner
-            </div>
-          </button>
+        <!-- Smart Scanner -->
+        <button
+          onclick="switchTab('scanner')"
+          id="btn-tab-scanner"
+          class="role-auth hidden nav-item flex items-center w-full px-2.5 py-2.5 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+          title="Smart Scanner & Trolley"
+        >
+          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+            <i class="fa-solid fa-barcode text-base"></i>
+          </div>
+          <span class="sidebar-label ml-2.5 text-xs font-semibold leading-none" data-i18n="nav_scan">
+            Smart Scanner
+          </span>
+        </button>
 
-          <!-- 3. Riwayat Transaksi -->
-          <button
-            onclick="switchTab('riwayat')"
-            id="btn-tab-riwayat"
-            class="role-auth hidden nav-item w-10 h-10 rounded-full flex items-center justify-center text-rose-100/75 hover:text-white hover:bg-white/15 transition-all duration-200 relative group"
-            title="Riwayat Transaksi Masuk/Keluar"
-          >
-            <i class="fa-solid fa-clock-rotate-left text-sm"></i>
-            <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Riwayat Transaksi
-            </div>
-          </button>
+        <!-- Riwayat Transaksi -->
+        <button
+          onclick="switchTab('riwayat')"
+          id="btn-tab-riwayat"
+          class="role-auth hidden nav-item flex items-center w-full px-2.5 py-2.5 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+          title="Riwayat Transaksi"
+        >
+          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+            <i class="fa-solid fa-clock-rotate-left text-base"></i>
+          </div>
+          <span class="sidebar-label ml-2.5 text-xs font-semibold leading-none" data-i18n="nav_hist">
+            Riwayat Transaksi
+          </span>
+        </button>
 
-          <!-- Divider -->
-          <div class="role-admin hidden w-6 h-[1px] bg-white/20 my-0.5"></div>
+        <!-- Master Data Section -->
+        <div class="role-admin hidden pt-3 pb-1 border-t border-rose-900/40 my-2">
+          <div class="sidebar-divider-text px-2.5 pb-1 text-[10px] font-bold text-rose-300/60 uppercase tracking-wider" data-i18n="nav_master">
+            Master Data
+          </div>
 
-          <!-- 4. Master Barang -->
+          <!-- Master Barang -->
           <button
             onclick="switchTab('barang')"
             id="btn-tab-barang"
-            class="role-admin hidden nav-item w-10 h-10 rounded-full flex items-center justify-center text-rose-100/75 hover:text-white hover:bg-white/15 transition-all duration-200 relative group"
-            title="Kelola Master Barang"
+            class="nav-item flex items-center w-full px-2.5 py-2.5 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+            title="Master Barang"
           >
-            <i class="fa-solid fa-box-open text-sm"></i>
-            <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Master Barang
+            <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+              <i class="fa-solid fa-box-open text-base"></i>
             </div>
+            <span class="sidebar-label ml-2.5 text-xs font-semibold leading-none" data-i18n="nav_item">
+              Master Barang
+            </span>
           </button>
 
-          <!-- 5. Master Customer -->
+          <!-- Master Customer -->
           <button
             onclick="switchTab('customer')"
             id="btn-tab-customer"
-            class="role-admin hidden nav-item w-10 h-10 rounded-full flex items-center justify-center text-rose-100/75 hover:text-white hover:bg-white/15 transition-all duration-200 relative group"
-            title="Kelola Master Customer"
+            class="nav-item flex items-center w-full px-2.5 py-2.5 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+            title="Master Customer"
           >
-            <i class="fa-solid fa-building-user text-sm"></i>
-            <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Master Customer
+            <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+              <i class="fa-solid fa-building-user text-base"></i>
             </div>
+            <span class="sidebar-label ml-2.5 text-xs font-semibold leading-none" data-i18n="nav_cust">
+              Master Customer
+            </span>
           </button>
 
-          <!-- 6. Kelola Pengguna (Users) -->
+          <!-- Kelola Pengguna -->
           <button
             onclick="switchTab('users')"
             id="btn-tab-users"
-            class="role-admin hidden nav-item w-10 h-10 rounded-full flex items-center justify-center text-rose-100/75 hover:text-white hover:bg-white/15 transition-all duration-200 relative group"
-            title="Kelola Pengguna Sistem"
+            class="nav-item flex items-center w-full px-2.5 py-2.5 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all duration-200"
+            title="Kelola Pengguna"
           >
-            <i class="fa-solid fa-user-shield text-sm"></i>
-            <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs font-semibold whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Kelola Pengguna
+            <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+              <i class="fa-solid fa-user-shield text-base"></i>
             </div>
+            <span class="sidebar-label ml-2.5 text-xs font-semibold leading-none" data-i18n="nav_user">
+              Kelola Pengguna
+            </span>
           </button>
-        </nav>
+        </div>
       </div>
 
-      <!-- BOTTOM SECTION: SYNC & AUTH PILL -->
-      <div class="flex flex-col items-center gap-2 w-full">
-        <div class="burgundy-pill w-12 rounded-full py-2 px-1 flex flex-col items-center gap-2 shadow-md">
-          <!-- Refresh / Sync Button -->
-          <button
-            onclick="refreshAllData()"
-            class="w-8 h-8 rounded-full flex items-center justify-center text-rose-200 hover:text-white hover:bg-white/15 transition-all relative group"
-            title="Sinkronisasi Data"
-          >
+      <!-- 3. FOOTER ACTIONS SECTION -->
+      <div class="p-2 border-t border-rose-900/40 space-y-1">
+        <!-- Toggle Bahasa -->
+        <button
+          onclick="toggleLang()"
+          class="flex items-center w-full px-2.5 py-2 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all"
+          title="Ubah Bahasa / 切换语言"
+        >
+          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+            <i class="fa-solid fa-language text-sm"></i>
+          </div>
+          <span class="sidebar-label ml-2.5 text-xs font-medium">Ubah Bahasa (ID/ZH)</span>
+        </button>
+
+        <!-- Tutup Buku (Admin) -->
+        <button
+          onclick="triggerForceRollover()"
+          id="btnForceRolloverNav"
+          class="role-admin hidden flex items-center w-full px-2.5 py-2 rounded-xl text-rose-200 hover:bg-red-500/20 hover:text-white transition-all"
+          title="Tutup Buku Harian"
+        >
+          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+            <i class="fa-solid fa-bolt text-sm"></i>
+          </div>
+          <span class="sidebar-label ml-2.5 text-xs font-medium">Tutup Buku Harian</span>
+        </button>
+
+        <!-- Sync Button -->
+        <button
+          onclick="refreshAllData()"
+          class="flex items-center w-full px-2.5 py-2 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all"
+          title="Sinkronisasi Data"
+        >
+          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
             <i class="fa-solid fa-rotate-right text-xs" id="syncSpinnerNav"></i>
-            <div class="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-gray-950 text-white text-xs font-medium whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-              Sinkronisasi
-            </div>
-          </button>
+          </div>
+          <span class="sidebar-label ml-2.5 text-xs font-medium">Sinkronisasi Data</span>
+        </button>
 
-          <!-- User Profile (Logged in) -->
-          <div id="userProfileCard" class="hidden flex-col items-center relative group">
-            <button
-              onclick="logoutAction()"
-              class="w-8 h-8 rounded-full bg-rose-200/25 text-rose-100 hover:bg-red-500/40 hover:text-white flex items-center justify-center font-bold text-xs border border-white/25 transition-all"
-              title="Keluar / Logout"
-            >
+        <!-- User Profile Card (Logged In) -->
+        <div id="userProfileCard" class="hidden items-center justify-between p-2 rounded-xl bg-white/10 text-white transition-all">
+          <div class="flex items-center min-w-0">
+            <div class="w-8 h-8 rounded-full bg-rose-200/30 flex items-center justify-center font-bold text-xs flex-shrink-0 border border-white/20">
               <span id="avatarLetter">U</span>
-            </button>
-            <div class="absolute left-full ml-3 px-3 py-1.5 rounded-xl bg-gray-950 text-white text-xs shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50 leading-tight">
-              <p class="font-bold text-white" id="userNameDisplay">User</p>
-              <p class="text-[10px] text-rose-300" id="userRoleBadge">Role</p>
-              <p class="text-[9px] text-gray-400 mt-1">Klik untuk Keluar</p>
+            </div>
+            <div class="sidebar-label ml-2.5 min-w-0">
+              <p id="userNameDisplay" class="text-xs font-bold truncate">User</p>
+              <span id="userRoleBadge" class="text-[10px] text-rose-300 font-medium">Role</span>
             </div>
           </div>
-
-          <!-- Guest Login Button -->
-          <div id="guestLoginPrompt" class="flex flex-col items-center">
-            <button
-              onclick="openLoginModal()"
-              class="w-8 h-8 rounded-full flex items-center justify-center text-rose-200 hover:text-white hover:bg-white/15 transition-all relative group"
-              title="Masuk Sistem / Login"
-            >
-              <i class="fa-solid fa-arrow-right-to-bracket text-xs"></i>
-              <div class="absolute left-full ml-3 px-2.5 py-1 rounded-lg bg-gray-950 text-white text-xs font-medium whitespace-nowrap shadow-xl border border-white/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-all z-50">
-                Masuk Sistem
-              </div>
-            </button>
-          </div>
+          <button onclick="logoutAction()" class="sidebar-label ml-auto text-rose-300 hover:text-white p-1" title="Keluar / Logout">
+            <i class="fa-solid fa-power-off text-xs"></i>
+          </button>
         </div>
 
-        <!-- Mobile Close Button (Hidden on Desktop) -->
-        <button
-          onclick="closeSidebar()"
-          class="lg:hidden w-8 h-8 rounded-full bg-black/40 text-white/80 hover:text-white flex items-center justify-center text-xs mt-1"
-          title="Tutup Menu"
-        >
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <!-- Guest Login Prompt -->
+        <div id="guestLoginPrompt">
+          <button
+            onclick="openLoginModal()"
+            class="flex items-center w-full px-2.5 py-2 rounded-xl text-rose-100 hover:bg-white/15 hover:text-white transition-all"
+            title="Masuk Sistem"
+          >
+            <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
+              <i class="fa-solid fa-arrow-right-to-bracket text-sm"></i>
+            </div>
+            <span class="sidebar-label ml-2.5 text-xs font-bold" data-i18n="btn_login">Masuk Sistem</span>
+          </button>
+        </div>
       </div>
     </aside>
 
-    <main class="flex-1 w-full flex flex-col min-h-screen overflow-x-hidden lg:pl-28 transition-all duration-300">
+    <main class="flex-1 w-full flex flex-col min-h-screen overflow-x-hidden pl-[68px] transition-all duration-300">
       <!-- HEADER -->
       <header
         id="mainTopHeader"
         class="glass-header py-4 px-6 sm:px-8 flex items-center justify-between gap-4 sticky top-0 z-20 transition-all duration-300"
       >
         <div class="flex items-center gap-4">
-          <button
-            onclick="toggleSidebar()"
-            class="w-10 h-10 rounded-full glass-btn text-gray-600 flex items-center justify-center lg:hidden"
-          >
-            <i class="fa-solid fa-bars text-sm"></i>
-          </button>
-            class="w-10 h-10 rounded-full glass-btn text-gray-600 flex items-center justify-center"
-          >
-            <i class="fa-solid fa-bars text-sm"></i>
-          </button>
           <div>
             <h2
               id="greetingTitle"
