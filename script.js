@@ -1344,9 +1344,9 @@ function generateTableRowsHtml(subDataset) {
           : "-";
     let varBadge =
       row.variance > 0
-        ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">${varFormat}</span>`
+        ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-green-50 text-green-700 border border-green-200">${varFormat}</span>`
         : row.variance < 0
-          ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-200">${varFormat}</span>`
+          ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-bold bg-red-50 text-red-600 border border-red-200">${varFormat}</span>`
           : `<span class="text-gray-400 font-medium text-xs">-</span>`;
 
     const custClass = canEditCust
@@ -1392,16 +1392,19 @@ function generateTableRowsHtml(subDataset) {
 
     html += `<tr class="hover:bg-blue-50/40 transition-colors bg-white border-b border-gray-200">`;
     if (isFirstOfGroup) {
-      html += `<td rowspan="${rowspan}" class="align-middle font-bold text-gray-800 text-center bg-gray-50 border border-gray-300 px-1 py-1 text-[11px]"><span class="${custClass}" ${custAction} title="Ubah Customer">${row.Customer}</span></td>`;
+      html += `<td rowspan="${rowspan}" class="align-middle font-bold text-gray-800 text-center bg-gray-50 border border-gray-300 px-1 py-1 text-xs"><span class="${custClass}" ${custAction} title="Ubah Customer">${row.Customer}</span></td>`;
     }
     html += `
-      <td class="text-center border border-gray-300 px-1 py-1 font-semibold text-[11px] text-gray-700">${row.No_Rel || "-"}</td>
-      <td class="border border-gray-300 px-2 py-1"><div class="font-bold text-gray-900 text-xs tracking-tight">${row.Part_Number}</div><div class="text-[9px] text-gray-500 uppercase truncate max-w-[130px] font-medium leading-none mt-0.5">${row.nama_barang}</div></td>
-      <td class="text-center font-bold text-blue-700 border border-gray-300 px-1 py-1 text-xs" title="${canEditStokUtama ? (currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama") : ""}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
-      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-xs"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
-      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-xs"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
-      <td class="text-center font-bold text-red-600 border border-gray-300 px-1 py-1 text-xs">${formatNum(row.sisa_del)}</td>
-      <td class="text-center font-bold text-purple-700 border border-gray-300 px-1 py-1 text-xs"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
+      <td class="text-center border border-gray-300 px-1 py-1 font-semibold text-xs text-gray-700">${row.No_Rel || "-"}</td>
+      <td class="border border-gray-300 px-2 py-1 overflow-hidden">
+        <div class="font-black text-gray-950 text-sm tracking-tight leading-snug truncate" title="${row.Part_Number}">${row.Part_Number}</div>
+        <div class="text-[9.5px] text-gray-500 uppercase truncate font-medium leading-none mt-0.5" title="${row.nama_barang}">${row.nama_barang}</div>
+      </td>
+      <td class="text-center font-bold text-blue-700 border border-gray-300 px-1 py-1 text-sm tabular-nums" title="${canEditStokUtama ? (currentLang === "zh" ? "点击调整主库存" : "Klik untuk Sesuaikan Stok Utama") : ""}"><span class="${stokUtamaClass}" ${stokUtamaAction}>${formatNum(row.stock)}</span></td>
+      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyDayClass}" ${qtyDayAction}>${formatNum(row.qty_day)}</span></td>
+      <td class="text-center font-bold text-gray-800 border border-gray-300 px-1 py-1 text-sm tabular-nums"><span class="${qtyOutClass}" ${qtyOutAction}>${formatNum(row.qty_out)}</span></td>
+      <td class="text-center font-bold text-red-600 border border-gray-300 px-1 py-1 text-sm tabular-nums">${formatNum(row.sisa_del)}</td>
+      <td class="text-center font-bold text-purple-700 border border-gray-300 px-1 py-1 text-sm tabular-nums"><span class="${assyClass}" ${assyAction}>${formatNum(row.assy_fsg)}</span></td>
       <td class="text-center border border-gray-300 px-1 py-1">${varBadge}</td>
     </tr>`;
   }
