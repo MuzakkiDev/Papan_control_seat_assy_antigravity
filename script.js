@@ -2165,26 +2165,51 @@ function renderRiwayatTable() {
 }
 
 function toggleFullScreen() {
-  if (!document.fullscreenElement)
-    document.documentElement.requestFullscreen().catch((err) => {
-      showToast(
-        "error",
-        "Gagal",
-        "Fitur fullscreen tidak didukung browser ini.",
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {
+      document.body.classList.toggle("is-fullscreen-fallback");
+      handleFullscreenUI(
+        document.body.classList.contains("is-fullscreen-fallback"),
       );
     });
-  else if (document.exitFullscreen) document.exitFullscreen();
-}
-document.addEventListener("fullscreenchange", () => {
-  const btn = document.getElementById("btnFullscreen"),
-    topHeader = document.getElementById("mainTopHeader");
-  if (document.fullscreenElement) {
-    if (btn) btn.innerHTML = '<i class="fa-solid fa-compress text-sm"></i>';
-    if (topHeader) topHeader.classList.add("hidden");
-  } else {
-    if (btn) btn.innerHTML = '<i class="fa-solid fa-expand text-sm"></i>';
-    if (topHeader) topHeader.classList.remove("hidden");
+  } else if (document.exitFullscreen) {
+    document.exitFullscreen();
   }
+}
+
+function handleFullscreenUI(isFull) {
+  const btn = document.getElementById("btnFullscreen"),
+    sb = document.getElementById("mainSidebar"),
+    main = document.querySelector("main");
+
+  if (isFull) {
+    if (btn) {
+      btn.innerHTML = '<i class="fa-solid fa-compress text-sm"></i>';
+      btn.title = "Keluar Layar Penuh";
+    }
+    // Sembunyikan sidebar saat mode full tabel
+    if (sb) sb.classList.add("hidden");
+    if (main) {
+      main.classList.remove("pl-[68px]", "pl-[260px]");
+      main.classList.add("!pl-0");
+    }
+  } else {
+    if (btn) {
+      btn.innerHTML = '<i class="fa-solid fa-expand text-sm"></i>';
+      btn.title = "Layar Penuh";
+    }
+    // Munculkan kembali sidebar saat keluar mode full
+    if (sb) sb.classList.remove("hidden");
+    if (main) {
+      const isPinned = sb && sb.classList.contains("sidebar-pinned");
+      main.classList.remove("!pl-0");
+      main.classList.add(isPinned ? "pl-[260px]" : "pl-[68px]");
+    }
+  }
+}
+
+document.addEventListener("fullscreenchange", () => {
+  handleFullscreenUI(Boolean(document.fullscreenElement));
 });
 
 function exportToExcel(tipe) {

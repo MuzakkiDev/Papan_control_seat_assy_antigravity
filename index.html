@@ -418,10 +418,10 @@
           class="flex items-center w-full px-2.5 py-2 rounded-xl text-rose-100/80 hover:bg-white/10 hover:text-white transition-all"
           title="Ubah Bahasa / 切换语言"
         >
-          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center">
-            <i class="fa-solid fa-language text-sm"></i>
+          <div class="w-9 h-9 flex-shrink-0 flex items-center justify-center font-bold text-xs bg-white/10 rounded-lg">
+            <span id="btnLang">中文</span>
           </div>
-          <span class="sidebar-label ml-2.5 text-xs font-medium">Ubah Bahasa (ID/ZH)</span>
+          <span class="sidebar-label ml-2.5 text-xs font-medium">Ubah Bahasa</span>
         </button>
 
         <!-- Tutup Buku (Admin) -->
@@ -482,58 +482,7 @@
     </aside>
 
     <main class="flex-1 w-full flex flex-col min-h-screen overflow-x-hidden pl-[68px] transition-all duration-300">
-      <!-- HEADER -->
-      <header
-        id="mainTopHeader"
-        class="glass-header py-4 px-6 sm:px-8 flex items-center justify-between gap-4 sticky top-0 z-20 transition-all duration-300"
-      >
-        <div class="flex items-center gap-4">
-          <div>
-            <h2
-              id="greetingTitle"
-              class="text-xl font-bold text-gray-900 tracking-tight"
-              data-i18n="hdr_overview"
-            >
-              Overview
-            </h2>
-          </div>
-        </div>
-        <div class="flex items-center gap-3">
-          <button
-            onclick="toggleLang()"
-            id="btnLang"
-            class="w-10 h-10 rounded-full glass-btn text-apple-blue font-bold text-xs flex items-center justify-center shadow-sm"
-            title="Ubah Bahasa / 切换语言"
-          >
-            中文
-          </button>
-          <button
-            onclick="triggerForceRollover()"
-            id="btnForceRollover"
-            class="hidden w-10 h-10 rounded-full glass-btn text-red-500 hover:bg-red-50 items-center justify-center shadow-sm transition-colors"
-            title="Tutup Buku Manual / 手动结算"
-          >
-            <i class="fa-solid fa-power-off text-sm"></i>
-          </button>
-          <div
-            class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full glass-input font-medium text-xs text-gray-600"
-          >
-            <span
-              class="w-1.5 h-1.5 inline-block rounded-full bg-green-500 animate-pulse"
-            ></span
-            ><span id="liveClock">--:--:--</span>
-          </div>
-          <button
-            onclick="refreshAllData()"
-            class="w-10 h-10 rounded-full glass-btn text-gray-600 flex items-center justify-center"
-            title="Sinkronisasi"
-          >
-            <i class="fa-solid fa-rotate-right text-xs" id="syncSpinner"></i>
-          </button>
-        </div>
-      </header>
-
-      <div class="p-3 sm:p-6 space-y-6 flex-1 max-w-[1920px] mx-auto w-full">
+      <div class="p-3 sm:p-5 space-y-5 flex-1 max-w-[1920px] mx-auto w-full">
         <!-- TAB PAPAN KONTROL -->
         <section id="tab-overview" class="tab-pane block">
           <div class="glass-panel rounded-3xl p-4 sm:p-6 w-full">
@@ -548,10 +497,13 @@
                   Papan Kontrol
                 </h3>
                 <p
-                  class="text-sm font-medium text-gray-500 mt-1"
-                  data-i18n="desc_board"
+                  class="text-xs font-medium text-gray-500 mt-1 flex flex-wrap items-center gap-2"
                 >
-                  Monitoring Live
+                  <span data-i18n="desc_board">Monitoring Live Stok & Delivery (Rollover 08:00)</span>
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/80 border border-gray-200 text-gray-700 font-semibold text-xs shadow-xs">
+                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                    <span id="liveClock">--:--:--</span>
+                  </span>
                 </p>
               </div>
               <div class="flex items-center gap-3">
