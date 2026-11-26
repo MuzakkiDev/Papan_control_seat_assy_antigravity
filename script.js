@@ -1002,6 +1002,19 @@ function buildSeatAssyControlDataset() {
   syncOperationalDayLocalCache();
   const list = [];
   const { opStart } = getOperationalDayInfo();
+  let effectiveOutStartMs = opStart.getTime();
+  const rolloverMarker = (appData.users || []).find(
+    (u) => u.username === "__SYSTEM_ROLLOVER__",
+  );
+  if (rolloverMarker && rolloverMarker.password) {
+    const pwdStr = String(rolloverMarker.password);
+    if (pwdStr.includes("|")) {
+      const ts = new Date(pwdStr.split("|")[1]).getTime();
+      if (!isNaN(ts) && ts > effectiveOutStartMs) {
+        effectiveOutStartMs = ts;
+      }
+    }
+  }
   appData.barang.forEach((itemBarang) => {
     const partNum = String(itemBarang.Part_Number).trim();
     const relatedOrders = appData.orders.filter(
@@ -1012,7 +1025,7 @@ function buildSeatAssyControlDataset() {
     const partOutLogs = appData.keluar.filter(
       (k) =>
         String(k.Part_Number).trim() === partNum &&
-        new Date(k.tanggal || k.created_at) >= opStart,
+        new Date(k.tanggal || k.created_at).getTime() >= effectiveOutStartMs,
     );
     const customerMap = new Map();
 

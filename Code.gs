@@ -250,7 +250,7 @@ function checkAndRunDailyRollover(isForce, opKey) {
     if (markerUser.password) {
       var pwdStr = String(markerUser.password);
       if (pwdStr.indexOf("DAY_") === 0) {
-        storedDate = pwdStr.replace("DAY_", "").trim();
+        storedDate = pwdStr.split("|")[0].replace("DAY_", "").trim();
       } else {
         try {
           storedDate = Utilities.formatDate(new Date(pwdStr), tz, "yyyy-MM-dd");
@@ -293,7 +293,7 @@ function checkAndRunDailyRollover(isForce, opKey) {
       }
       saveTableRows("List_Order", orders);
 
-      markerUser.password = "DAY_" + opKey;
+      markerUser.password = isForce ? ("DAY_" + opKey + "|" + new Date().toISOString()) : ("DAY_" + opKey);
       saveTableRows("Users", users);
 
       return { rolloverPerformed: true, opKey: opKey };
