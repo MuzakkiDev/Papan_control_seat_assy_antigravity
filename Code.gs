@@ -138,6 +138,8 @@ function handleAction(action, payload) {
 // =========================================================================
 
 function apiGetMasterData() {
+  checkAndRunDailyRollover(false);
+
   var barang = getTableRows("Master_Barang");
   var customer = getTableRows("Master_Customer");
   var orders = getTableRows("List_Order");
@@ -206,93 +208,101 @@ function apiDailyRollover(payload) {
 }
 
 function checkAndRunDailyRollover(isForce, opKey) {
-  var ss = getSpreadsheet();
-  var tz = ss.getSpreadsheetTimeZone() || "Asia/Jakarta";
-  if (!opKey) {
-    var now = new Date();
-    var opDate = new Date(now.getTime());
-    var hourNow = Number(Utilities.formatDate(now, tz, "HH"));
-    if (hourNow < 8) {
-      opDate.setDate(opDate.getDate() - 1);
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) {
+    return { rolloverPerformed: false, opKey: opKey || "" };
+  }
+  try {
+    var ss = getSpreadsheet();
+    var tz = ss.getSpreadsheetTimeZone() || "Asia/Jakarta";
+    if (!opKey) {
+      var now = new Date();
+      var opDate = new Date(now.getTime());
+      var hourNow = Number(Utilities.formatDate(now, tz, "HH"));
+      if (hourNow < 8) {
+        opDate.setDate(opDate.getDate() - 1);
+      }
+      opKey = Utilities.formatDate(opDate, tz, "yyyy-MM-dd");
     }
-    opKey = Utilities.formatDate(opDate, tz, "yyyy-MM-dd");
-  }
 
-  var users = getTableRows("Users");
-  var markerIndex = -1;
-  var markerUser = null;
-  for (var i = 0; i < users.length; i++) {
-    if (users[i].username === "__SYSTEM_ROLLOVER__") {
-      markerUser = users[i];
-      markerIndex = i;
-      break;
-    }
-  }
-
-  if (!markerUser) {
-    appendTableRow("Users", {
-      id: "sys_rollover",
-      username: "__SYSTEM_ROLLOVER__",
-      password: "DAY_" + opKey,
-      role: "SYSTEM"
-    });
-    return { rolloverPerformed: false, opKey: opKey };
-  }
-
-  var storedDate = "";
-  if (markerUser.password) {
-    var pwdStr = String(markerUser.password);
-    if (pwdStr.indexOf("DAY_") === 0) {
-      storedDate = pwdStr.replace("DAY_", "").trim();
-    } else {
-      try {
-        storedDate = Utilities.formatDate(new Date(pwdStr), tz, "yyyy-MM-dd");
-      } catch (e) {
-        storedDate = pwdStr.trim();
+    var users = getTableRows("Users");
+    var markerIndex = -1;
+    var markerUser = null;
+    for (var i = 0; i < users.length; i++) {
+      if (users[i].username === "__SYSTEM_ROLLOVER__") {
+        markerUser = users[i];
+        markerIndex = i;
+        break;
       }
     }
-  }
 
-  if (storedDate === opKey && !isForce) {
-    return { rolloverPerformed: false, opKey: opKey };
-  }
+    if (!markerUser) {
+      appendTableRow("Users", {
+        id: "sys_rollover",
+        username: "__SYSTEM_ROLLOVER__",
+        password: "DAY_" + opKey,
+        role: "SYSTEM"
+      });
+      return { rolloverPerformed: false, opKey: opKey };
+    }
 
-  if (isForce || storedDate !== opKey) {
-    var barang = getTableRows("Master_Barang");
-    var orders = getTableRows("List_Order");
-
-    for (var b = 0; b < barang.length; b++) {
-      var item = barang[b];
-      var partNum = String(item.Part_Number || "").trim();
-      var totalQtyDay = 0;
-
-      for (var o = 0; o < orders.length; o++) {
-        if (String(orders[o].Part_Number || "").trim() === partNum) {
-          totalQtyDay += (Number(orders[o].qty_order) || 0);
+    var storedDate = "";
+    if (markerUser.password) {
+      var pwdStr = String(markerUser.password);
+      if (pwdStr.indexOf("DAY_") === 0) {
+        storedDate = pwdStr.replace("DAY_", "").trim();
+      } else {
+        try {
+          storedDate = Utilities.formatDate(new Date(pwdStr), tz, "yyyy-MM-dd");
+        } catch (e) {
+          storedDate = pwdStr.trim();
         }
       }
-
-      var currentStok = Number(item.stok) || 0;
-      var currentAssy = Number(item.assy_fsg) || 0;
-      var newOpeningStock = currentStok + currentAssy - totalQtyDay;
-
-      item.stok = newOpeningStock;
-      item.assy_fsg = 0;
     }
-    saveTableRows("Master_Barang", barang);
 
-    for (var o2 = 0; o2 < orders.length; o2++) {
-      orders[o2].qty_order = 0;
+    if (storedDate === opKey && !isForce) {
+      return { rolloverPerformed: false, opKey: opKey };
     }
-    saveTableRows("List_Order", orders);
 
-    markerUser.password = "DAY_" + opKey;
-    saveTableRows("Users", users);
+    if (isForce || storedDate !== opKey) {
+      var barang = getTableRows("Master_Barang");
+      var orders = getTableRows("List_Order");
 
-    return { rolloverPerformed: true, opKey: opKey };
+      for (var b = 0; b < barang.length; b++) {
+        var item = barang[b];
+        var partNum = String(item.Part_Number || "").trim();
+        var totalQtyDay = 0;
+
+        for (var o = 0; o < orders.length; o++) {
+          if (String(orders[o].Part_Number || "").trim() === partNum) {
+            totalQtyDay += (Number(orders[o].qty_order) || 0);
+          }
+        }
+
+        var currentStok = Number(item.stok) || 0;
+        var currentAssy = Number(item.assy_fsg) || 0;
+        var newOpeningStock = currentStok + currentAssy - totalQtyDay;
+
+        item.stok = newOpeningStock;
+        item.assy_fsg = 0;
+      }
+      saveTableRows("Master_Barang", barang);
+
+      for (var o2 = 0; o2 < orders.length; o2++) {
+        orders[o2].qty_order = 0;
+      }
+      saveTableRows("List_Order", orders);
+
+      markerUser.password = "DAY_" + opKey;
+      saveTableRows("Users", users);
+
+      return { rolloverPerformed: true, opKey: opKey };
+    }
+
+    return { rolloverPerformed: false, opKey: opKey };
+  } finally {
+    lock.releaseLock();
   }
-
-  return { rolloverPerformed: false, opKey: opKey };
 }
 
 function apiSaveTransaksiKeluar(payload) {

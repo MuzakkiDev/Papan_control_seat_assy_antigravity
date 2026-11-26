@@ -329,6 +329,7 @@ function triggerForceRollover() {
           didOpen: () => Swal.showLoading(),
         });
         checkAndRunDailyRollover(true).then(() => {
+          resetLocalMultiCustQtys();
           Swal.close();
           showToast("success", "Berhasil", "Tutup Buku manual selesai.");
           refreshAllData();
@@ -434,6 +435,28 @@ function removeLocalMultiCustTarget(partNum, customerName) {
     map = getLocalMultiCustMap(partNum);
   delete map[cName];
   localStorage.setItem("multi_cust_orders_" + partNum, JSON.stringify(map));
+}
+function resetLocalMultiCustQtys() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith("multi_cust_orders_")) {
+        const map = JSON.parse(localStorage.getItem(k) || "{}");
+        Object.keys(map).forEach((c) => {
+          map[c] = 0;
+        });
+        localStorage.setItem(k, JSON.stringify(map));
+      }
+    }
+  } catch (e) {}
+}
+function syncOperationalDayLocalCache() {
+  const { opKey } = getOperationalDayInfo();
+  const lastOpKey = localStorage.getItem("sim_last_op_key");
+  if (lastOpKey && lastOpKey !== opKey) {
+    resetLocalMultiCustQtys();
+  }
+  localStorage.setItem("sim_last_op_key", opKey);
 }
 
 async function sendToBackend(action, payload = {}) {
@@ -976,6 +999,7 @@ function refreshAllUI() {
 }
 
 function buildSeatAssyControlDataset() {
+  syncOperationalDayLocalCache();
   const list = [];
   const { opStart } = getOperationalDayInfo();
   appData.barang.forEach((itemBarang) => {
@@ -1013,11 +1037,6 @@ function buildSeatAssyControlDataset() {
             name: cName,
             qty_day: Number(localMap[cRaw]) || 0,
           });
-        else if (
-          customerMap.get(key).qty_day === 0 &&
-          Number(localMap[cRaw]) > 0
-        )
-          customerMap.get(key).qty_day = Number(localMap[cRaw]);
       }
     });
     partOutLogs.forEach((k) => {
