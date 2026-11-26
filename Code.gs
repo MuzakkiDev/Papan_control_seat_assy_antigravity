@@ -104,6 +104,9 @@ function handleAction(action, payload) {
     case "apiUpdateQtyDay":
       return apiUpdateQtyDay(payload);
 
+    case "apiBulkUpdateQtyDay":
+      return apiBulkUpdateQtyDay(payload);
+
     case "apiUpdateCustomerPart":
       return apiUpdateCustomerPart(payload);
 
@@ -586,6 +589,70 @@ function apiUpdateQtyDay(payload) {
   }
 
   return { success: true };
+}
+
+function apiBulkUpdateQtyDay(payload) {
+  var items = payload.items || [];
+  var petugas = String(payload.petugas || "");
+  if (!items || items.length === 0) {
+    return { success: false, message: "Tidak ada data target untuk disimpan" };
+  }
+
+  var orders = getTableRows("List_Order");
+  var logRows = [];
+  var nowIso = new Date().toISOString();
+
+  for (var idx = 0; idx < items.length; idx++) {
+    var entry = items[idx];
+    var partNumber = String(entry.partNumber || "").trim();
+    var custTarget = String(entry.customer || "").trim();
+    var qty = Number(entry.qty) || 0;
+    var diff = Number(entry.diff) || 0;
+    if (!partNumber || qty < 0) continue;
+
+    var matchedOrder = null;
+    var partOrders = [];
+    for (var i = 0; i < orders.length; i++) {
+      if (String(orders[i].Part_Number || "").trim() === partNumber) {
+        partOrders.push(orders[i]);
+        if (String(orders[i].id_customer || "").toLowerCase() === custTarget.toLowerCase()) {
+          matchedOrder = orders[i];
+        }
+      }
+    }
+
+    if (matchedOrder) {
+      matchedOrder.qty_order = qty;
+    } else if (partOrders.length === 1 && (!partOrders[0].id_customer || partOrders[0].id_customer === "-")) {
+      partOrders[0].qty_order = qty;
+      partOrders[0].id_customer = (custTarget !== "-" ? custTarget : "");
+    } else {
+      orders.push({
+        id: generateId(),
+        Part_Number: partNumber,
+        qty_order: qty,
+        id_customer: (custTarget !== "-" ? custTarget : "")
+      });
+    }
+
+    if (petugas && diff !== 0) {
+      logRows.push({
+        id: generateId(),
+        tanggal: nowIso,
+        Part_Number: partNumber,
+        qty: diff,
+        petugas: petugas,
+        catatan: "Target Massal QTY/DAY (" + custTarget + ")"
+      });
+    }
+  }
+
+  saveTableRows("List_Order", orders);
+  if (logRows.length > 0) {
+    appendMultipleRows("Transaksi_Masuk", logRows);
+  }
+
+  return { success: true, updatedCount: items.length };
 }
 
 function apiUpdateCustomerPart(payload) {

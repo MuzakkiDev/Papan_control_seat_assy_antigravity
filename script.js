@@ -1118,6 +1118,215 @@ function buildSeatAssyControlDataset() {
   appData.seatAssyControl = list;
 }
 
+let bulkQtyDraftMap = {};
+
+function getBulkRowKey(partNumber, customer) {
+  return `${String(partNumber).trim()}__${String(customer || "-").trim()}`;
+}
+
+function openBulkQtyDayModal() {
+  if (!currentUser) return promptLoginToEdit("Target Massal QTY/DAY");
+  const modal = document.getElementById("modalBulkQtyDay");
+  if (!modal) return;
+
+  bulkQtyDraftMap = {};
+  (appData.seatAssyControl || []).forEach((row) => {
+    bulkQtyDraftMap[getBulkRowKey(row.Part_Number, row.Customer)] = Number(row.qty_day) || 0;
+  });
+
+  const custSelect = document.getElementById("filterCustBulkQtyDay");
+  if (custSelect) {
+    const uniqueCusts = Array.from(
+      new Set((appData.seatAssyControl || []).map((r) => r.Customer).filter((c) => c && c !== "-")),
+    );
+    custSelect.innerHTML =
+      `<option value="ALL">Semua Customer</option>` +
+      uniqueCusts.map((c) => `<option value="${c}">${c}</option>`).join("");
+  }
+  const searchEl = document.getElementById("searchBulkQtyDay");
+  if (searchEl) searchEl.value = "";
+
+  modal.classList.remove("hidden");
+  renderBulkQtyDayRows();
+}
+
+function closeBulkQtyDayModal() {
+  const modal = document.getElementById("modalBulkQtyDay");
+  if (modal) modal.classList.add("hidden");
+}
+
+function updateBulkDraftValue(partNumber, customer, val) {
+  const num = Math.max(0, Number(val) || 0);
+  bulkQtyDraftMap[getBulkRowKey(partNumber, customer)] = num;
+  updateBulkChangedCounter();
+}
+
+function updateBulkChangedCounter() {
+  const el = document.getElementById("txtBulkChangedCount");
+  if (!el) return;
+  let changed = 0;
+  (appData.seatAssyControl || []).forEach((row) => {
+    const key = getBulkRowKey(row.Part_Number, row.Customer);
+    const draftVal = bulkQtyDraftMap[key] !== undefined ? bulkQtyDraftMap[key] : (Number(row.qty_day) || 0);
+    if (draftVal !== (Number(row.qty_day) || 0)) changed++;
+  });
+  el.innerText = `${changed} part diubah`;
+}
+
+function renderBulkQtyDayRows() {
+  const tbody = document.getElementById("tblBulkQtyDayBody");
+  if (!tbody) return;
+  const kw = (document.getElementById("searchBulkQtyDay")?.value || "").trim().toLowerCase();
+  const custFilter = document.getElementById("filterCustBulkQtyDay")?.value || "ALL";
+
+  let rows = (appData.seatAssyControl || []).slice();
+  if (custFilter !== "ALL") {
+    rows = rows.filter((r) => r.Customer === custFilter);
+  }
+  if (kw) {
+    rows = rows.filter(
+      (r) =>
+        String(r.Part_Number).toLowerCase().includes(kw) ||
+        String(r.nama_barang).toLowerCase().includes(kw) ||
+        String(r.Customer).toLowerCase().includes(kw),
+    );
+  }
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Tidak ada part yang cocok</td></tr>`;
+    updateBulkChangedCounter();
+    return;
+  }
+
+  let html = "";
+  rows.forEach((r) => {
+    const key = getBulkRowKey(r.Part_Number, r.Customer);
+    const val = bulkQtyDraftMap[key] !== undefined ? bulkQtyDraftMap[key] : (Number(r.qty_day) || 0);
+    const safePart = String(r.Part_Number).replace(/'/g, "\\'");
+    const safeCust = String(r.Customer).replace(/'/g, "\\'");
+    const isChanged = val !== (Number(r.qty_day) || 0);
+    html += `<tr class="hover:bg-slate-50 border-b border-slate-200 ${isChanged ? "bg-amber-50/40" : ""}">
+      <td class="text-center font-bold text-slate-700">${r.Customer}</td>
+      <td class="font-bold text-slate-900">${r.Part_Number}<div class="text-[10px] text-slate-400 font-normal truncate">${r.nama_barang}</div></td>
+      <td class="text-center font-bold text-blue-700 tabular-nums">${r.stock}</td>
+      <td class="text-center font-semibold text-slate-500 tabular-nums">${r.qty_day}</td>
+      <td class="text-center px-2 py-1">
+        <input
+          type="number"
+          min="0"
+          value="${val}"
+          oninput="updateBulkDraftValue('${safePart}', '${safeCust}', this.value)"
+          class="w-24 text-center font-bold text-slate-900 border border-slate-300 rounded-lg py-1 px-2 text-xs focus:outline-none focus:border-[#58111A] focus:ring-2 focus:ring-[#58111A]/20"
+        />
+      </td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+  updateBulkChangedCounter();
+}
+
+function copyYesterdayTargetsToBulk() {
+  const arsip = (appData.arsip || []).slice();
+  if (arsip.length === 0) {
+    return showToast("info", "Arsip Kosong", "Belum ada data arsip tutup buku kemarin untuk disalin.");
+  }
+  arsip.sort((a, b) => String(b.waktu_tutup_buku || "").localeCompare(String(a.waktu_tutup_buku || "")));
+  const latestDate = arsip[0].tanggal_operasi;
+  const latestRows = arsip.filter((r) => r.tanggal_operasi === latestDate);
+
+  const qtyByPart = {};
+  latestRows.forEach((r) => {
+    const p = String(r.Part_Number || "").trim();
+    if (p && qtyByPart[p] === undefined) {
+      qtyByPart[p] = Number(r.qty_day) || 0;
+    }
+  });
+
+  let copiedCount = 0;
+  (appData.seatAssyControl || []).forEach((row) => {
+    if (qtyByPart[row.Part_Number] !== undefined) {
+      bulkQtyDraftMap[getBulkRowKey(row.Part_Number, row.Customer)] = qtyByPart[row.Part_Number];
+      copiedCount++;
+    }
+  });
+
+  renderBulkQtyDayRows();
+  showToast("success", "Target Disalin", `Menyalin target dari arsip ${latestDate} (${copiedCount} part).`);
+}
+
+function clearAllBulkTargets() {
+  (appData.seatAssyControl || []).forEach((row) => {
+    bulkQtyDraftMap[getBulkRowKey(row.Part_Number, row.Customer)] = 0;
+  });
+  renderBulkQtyDayRows();
+}
+
+function submitBulkQtyDay() {
+  if (!currentUser) return promptLoginToEdit("Target Massal QTY/DAY");
+  if (isProcessing) return;
+
+  const itemsToUpdate = [];
+  (appData.seatAssyControl || []).forEach((row) => {
+    const key = getBulkRowKey(row.Part_Number, row.Customer);
+    const oldQty = Number(row.qty_day) || 0;
+    const newQty = bulkQtyDraftMap[key] !== undefined ? Number(bulkQtyDraftMap[key]) || 0 : oldQty;
+    if (newQty !== oldQty) {
+      itemsToUpdate.push({
+        partNumber: row.Part_Number,
+        customer: row.Customer,
+        qty: newQty,
+        diff: newQty - oldQty,
+      });
+    }
+  });
+
+  if (itemsToUpdate.length === 0) {
+    return showToast("info", "Tidak Ada Perubahan", "Belum ada angka target yang diubah.");
+  }
+
+  isProcessing = true;
+  swalUI.fire({
+    title: "Menyimpan Target Massal...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  });
+
+  sendToBackend("apiBulkUpdateQtyDay", {
+    items: itemsToUpdate,
+    petugas: currentUser.username,
+  }).then((res) => {
+    isProcessing = false;
+    Swal.close();
+    if (res && res.success) {
+      itemsToUpdate.forEach((it) => {
+        saveLocalMultiCustTarget(it.partNumber, it.customer, it.qty);
+        const foundOrd = (appData.orders || []).find(
+          (o) =>
+            String(o.Part_Number).trim() === it.partNumber &&
+            String(o.id_customer || "").toLowerCase() === String(it.customer).toLowerCase(),
+        );
+        if (foundOrd) {
+          foundOrd.qty_order = it.qty;
+        } else {
+          appData.orders.push({
+            id: "ord_" + Date.now() + "_" + Math.random(),
+            Part_Number: it.partNumber,
+            qty_order: it.qty,
+            id_customer: it.customer !== "-" ? it.customer : "",
+          });
+        }
+      });
+      closeBulkQtyDayModal();
+      buildSeatAssyControlDataset();
+      refreshAllUI();
+      showToast("success", "Berhasil", `${itemsToUpdate.length} target QTY/DAY disimpan.`);
+      refreshAllData();
+    } else {
+      showToast("error", "Gagal Menyimpan", (res && res.message) || "Terjadi kesalahan");
+    }
+  });
+}
+
 function promptLoginToEdit(fieldLabel = "data ini") {
   showToast(
     "info",

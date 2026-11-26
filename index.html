@@ -532,6 +532,15 @@
                   >
                 </div>
                 <button
+                  onclick="openBulkQtyDayModal()"
+                  id="btnBulkQtyDay"
+                  class="px-3.5 py-2 rounded-full bg-white text-[#58111A] border border-[#58111A]/20 hover:bg-[#58111A] hover:text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
+                  title="Isi Target QTY/DAY Sekaligus atau Salin dari Arsip Kemarin"
+                >
+                  <i class="fa-solid fa-list-check"></i>
+                  <span>Target Massal</span>
+                </button>
+                <button
                   onclick="exportToExcel('PapanKontrol')"
                   class="px-3.5 py-2 rounded-full bg-white text-[#58111A] border border-[#58111A]/20 hover:bg-[#58111A] hover:text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
                   title="Ekspor Papan Kontrol ke Excel"
@@ -1142,6 +1151,107 @@
         </section>
       </div>
     </main>
+
+    <!-- MODAL BULK TARGET QTY/DAY -->
+    <div
+      id="modalBulkQtyDay"
+      class="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden"
+    >
+      <div class="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/70">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-[#58111A]"></i>
+              <span>Isi Target Harian (QTY/DAY) Massal</span>
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Ubah target banyak part sekaligus atau salin dari arsip tutup buku terakhir
+            </p>
+          </div>
+          <button
+            onclick="closeBulkQtyDayModal()"
+            class="w-8 h-8 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100 flex items-center justify-center transition-colors"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="px-6 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2 bg-white">
+          <div class="flex items-center gap-2 flex-wrap">
+            <input
+              type="text"
+              id="searchBulkQtyDay"
+              oninput="renderBulkQtyDayRows()"
+              placeholder="Cari Part / Customer..."
+              class="glass-input rounded-full px-4 py-1.5 text-xs font-medium w-48"
+            />
+            <select
+              id="filterCustBulkQtyDay"
+              onchange="renderBulkQtyDayRows()"
+              class="glass-input rounded-full px-3 py-1.5 text-xs font-medium text-slate-700 cursor-pointer"
+            >
+              <option value="ALL">Semua Customer</option>
+            </select>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onclick="copyYesterdayTargetsToBulk()"
+              class="px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              title="Ambil angka QTY/DAY dari arsip tutup buku terakhir"
+            >
+              <i class="fa-solid fa-copy"></i>
+              <span>Salin Target Kemarin</span>
+            </button>
+            <button
+              type="button"
+              onclick="clearAllBulkTargets()"
+              class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-semibold transition-colors"
+            >
+              Reset 0
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 py-3">
+          <table class="w-full text-xs text-left glass-table">
+            <thead class="sticky top-0 z-10">
+              <tr class="bg-slate-100 text-slate-800 font-bold">
+                <th class="w-20 text-center">Customer</th>
+                <th class="w-44">Part Number</th>
+                <th class="w-16 text-center">Stock</th>
+                <th class="w-20 text-center">Target Lama</th>
+                <th class="w-28 text-center">Target Baru (QTY/DAY)</th>
+              </tr>
+            </thead>
+            <tbody id="tblBulkQtyDayBody"></tbody>
+          </table>
+        </div>
+
+        <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between gap-3">
+          <span id="txtBulkChangedCount" class="text-xs font-semibold text-slate-600">
+            0 part diubah
+          </span>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              onclick="closeBulkQtyDayModal()"
+              class="px-4 py-2 rounded-full bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition-colors"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onclick="submitBulkQtyDay()"
+              class="px-5 py-2 rounded-full bg-[#58111A] hover:bg-[#430A13] text-white text-xs font-semibold shadow-md shadow-[#58111A]/20 transition-all active:scale-95 flex items-center gap-1.5"
+            >
+              <i class="fa-solid fa-check"></i>
+              <span>Simpan Semua Target</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- MODAL SMART ACTION -->
     <div
