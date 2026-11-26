@@ -267,21 +267,51 @@ function checkAndRunDailyRollover(isForce, opKey) {
     if (isForce || storedDate !== opKey) {
       var barang = getTableRows("Master_Barang");
       var orders = getTableRows("List_Order");
+      var keluar = getTableRows("Transaksi_Keluar");
+
+      var jakartaOffsetStr = Utilities.formatDate(new Date(), tz, "Z");
+      var tzOffset = jakartaOffsetStr.slice(0, 3) + ":" + jakartaOffsetStr.slice(3);
+
+      var effectiveOutStartMs = 0;
+      if (markerUser.password && String(markerUser.password).indexOf("|") !== -1) {
+        var forceTime = new Date(String(markerUser.password).split("|")[1]).getTime();
+        if (!isNaN(forceTime)) effectiveOutStartMs = forceTime;
+      }
+      if (effectiveOutStartMs === 0 && storedDate && storedDate.split("-").length === 3) {
+        var parsedStart = new Date(storedDate + "T08:00:00" + tzOffset).getTime();
+        if (!isNaN(parsedStart)) effectiveOutStartMs = parsedStart;
+      }
+
+      var currentOpStartMs = new Date(opKey + "T08:00:00" + tzOffset).getTime();
+      var qtyOutByPart = {};
+
+      for (var k = 0; k < keluar.length; k++) {
+        var rowK = keluar[k];
+        var kPart = String(rowK.Part_Number || "").trim();
+        var kQty = Number(rowK.qty) || 0;
+        var kTanggal = rowK.tanggal || rowK.created_at || "";
+
+        if (kPart.indexOf("T") !== -1 && rowK.qty && typeof rowK.qty === "string" && isNaN(Number(rowK.qty))) {
+          kTanggal = kPart;
+          kPart = String(rowK.qty).trim();
+          kQty = Number(rowK.petugas) || 0;
+        }
+
+        if (!kPart) continue;
+        var kMs = kTanggal ? new Date(kTanggal).getTime() : 0;
+        if (!isNaN(kMs) && kMs >= effectiveOutStartMs && (isForce || isNaN(currentOpStartMs) || kMs < currentOpStartMs)) {
+          qtyOutByPart[kPart] = (qtyOutByPart[kPart] || 0) + kQty;
+        }
+      }
 
       for (var b = 0; b < barang.length; b++) {
         var item = barang[b];
         var partNum = String(item.Part_Number || "").trim();
-        var totalQtyDay = 0;
-
-        for (var o = 0; o < orders.length; o++) {
-          if (String(orders[o].Part_Number || "").trim() === partNum) {
-            totalQtyDay += (Number(orders[o].qty_order) || 0);
-          }
-        }
+        var totalQtyOut = qtyOutByPart[partNum] || 0;
 
         var currentStok = Number(item.stok) || 0;
         var currentAssy = Number(item.assy_fsg) || 0;
-        var newOpeningStock = currentStok + currentAssy - totalQtyDay;
+        var newOpeningStock = currentStok + currentAssy - totalQtyOut;
 
         item.stok = newOpeningStock;
         item.assy_fsg = 0;
