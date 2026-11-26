@@ -148,6 +148,7 @@ let currentUser = null,
     keluar: [],
     seatAssyControl: [],
     users: [],
+    arsip: [],
   };
 let activeScannedPart = null,
   isProcessing = false;
@@ -270,6 +271,7 @@ window.addEventListener("DOMContentLoaded", () => {
             appData.masuk = (res.masuk || []).map(normalizeTransactionRecord);
             appData.keluar = (res.keluar || []).map(normalizeTransactionRecord);
             appData.users = res.users || [];
+            appData.arsip = res.arsip || [];
             buildSeatAssyControlDataset();
             refreshAllUI();
           }
@@ -955,6 +957,7 @@ function loadInitialOrMockData() {
         appData.masuk = (res.masuk || []).map(normalizeTransactionRecord);
         appData.keluar = (res.keluar || []).map(normalizeTransactionRecord);
         appData.users = res.users || [];
+        appData.arsip = res.arsip || [];
         buildSeatAssyControlDataset();
         refreshAllUI();
       } else {
@@ -985,6 +988,7 @@ function refreshAllUI() {
     document.getElementById("globalSearchInput")?.value || "",
   );
   renderRiwayatTable();
+  renderArsipHarianTable();
   renderMasterBarangTable(
     document.getElementById("searchMasterBarang")?.value || "",
   );
@@ -2305,6 +2309,80 @@ function renderUsersTable(keyword = "") {
     .join("");
 }
 
+function switchRiwayatSubTab(mode) {
+  const panelTrx = document.getElementById("panelRiwayatTransaksi");
+  const panelArsip = document.getElementById("panelArsipHarian");
+  const btnTrx = document.getElementById("btnSubRiwayatTransaksi");
+  const btnArsip = document.getElementById("btnSubRiwayatArsip");
+  if (!panelTrx || !panelArsip) return;
+
+  const activeCls = "px-5 py-2 rounded-full text-sm font-semibold transition-all bg-[#58111A] text-white shadow-sm";
+  const idleCls = "px-5 py-2 rounded-full text-sm font-semibold transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50";
+
+  if (mode === "arsip") {
+    panelTrx.classList.add("hidden");
+    panelArsip.classList.remove("hidden");
+    if (btnTrx) btnTrx.className = idleCls;
+    if (btnArsip) btnArsip.className = activeCls;
+    renderArsipHarianTable();
+  } else {
+    panelArsip.classList.add("hidden");
+    panelTrx.classList.remove("hidden");
+    if (btnArsip) btnArsip.className = idleCls;
+    if (btnTrx) btnTrx.className = activeCls;
+    renderRiwayatTable();
+  }
+}
+
+function renderArsipHarianTable() {
+  const tbody = document.getElementById("tblArsipHarianBody");
+  if (!tbody) return;
+  const tglFilter = document.getElementById("filterTanggalArsip")?.value || "";
+  const partKw = (document.getElementById("searchArsipPart")?.value || "").trim().toLowerCase();
+
+  let rows = (appData.arsip || []).slice();
+  if (tglFilter) {
+    rows = rows.filter((r) => String(r.tanggal_operasi || "").startsWith(tglFilter));
+  }
+  if (partKw) {
+    rows = rows.filter(
+      (r) =>
+        String(r.Part_Number || "").toLowerCase().includes(partKw) ||
+        String(r.Customer || "").toLowerCase().includes(partKw),
+    );
+  }
+
+  rows.sort((a, b) => String(b.waktu_tutup_buku || "").localeCompare(String(a.waktu_tutup_buku || "")));
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="py-12 text-center text-gray-400">Belum ada data arsip tutup buku...</td></tr>`;
+    return;
+  }
+
+  const fmt = (n) => (Number(n) === 0 ? "-" : Number(n));
+  let html = "";
+  rows.forEach((r) => {
+    const modeBadge =
+      r.mode_rollover === "MANUAL"
+        ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">MANUAL</span>`
+        : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">AUTO 08:00</span>`;
+    html += `<tr class="hover:bg-slate-50 transition-colors border-b border-slate-200">
+      <td class="text-center font-semibold text-slate-700">${r.tanggal_operasi || "-"}</td>
+      <td class="text-center text-slate-500 text-[11px]">${r.waktu_tutup_buku || "-"}</td>
+      <td class="font-bold text-slate-900">${r.Part_Number || "-"}<div class="text-[10px] text-slate-400 font-normal truncate">${r.nama_barang || "-"}</div></td>
+      <td class="text-center font-semibold text-slate-700">${r.Customer || "-"}</td>
+      <td class="text-center font-bold text-blue-700 tabular-nums">${fmt(r.stok_awal)}</td>
+      <td class="text-center font-semibold text-slate-800 tabular-nums">${fmt(r.qty_day)}</td>
+      <td class="text-center font-semibold text-slate-800 tabular-nums">${fmt(r.qty_out)}</td>
+      <td class="text-center font-bold text-red-600 tabular-nums">${fmt(r.sisa_del)}</td>
+      <td class="text-center font-bold text-purple-700 tabular-nums">${fmt(r.assy_fsg)}</td>
+      <td class="text-center font-black text-emerald-700 tabular-nums">${fmt(r.stok_akhir)}</td>
+      <td class="text-center">${modeBadge}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
 function renderRiwayatTable() {
   const tbody = document.getElementById("tblRiwayatBody");
   if (!tbody) return;
@@ -2527,6 +2605,36 @@ function exportToExcel(tipe) {
       "Laporan_Riwayat_Transaksi_" +
       (filterBulan ? filterBulan : dateStr) +
       ".xlsx";
+  } else if (tipe === "ArsipHarian") {
+    const tglFilter = document.getElementById("filterTanggalArsip")?.value || "";
+    const partKw = (document.getElementById("searchArsipPart")?.value || "").trim().toLowerCase();
+    let rows = (appData.arsip || []).slice();
+    if (tglFilter) {
+      rows = rows.filter((r) => String(r.tanggal_operasi || "").startsWith(tglFilter));
+    }
+    if (partKw) {
+      rows = rows.filter(
+        (r) =>
+          String(r.Part_Number || "").toLowerCase().includes(partKw) ||
+          String(r.Customer || "").toLowerCase().includes(partKw),
+      );
+    }
+    rows.sort((a, b) => String(b.waktu_tutup_buku || "").localeCompare(String(a.waktu_tutup_buku || "")));
+    dataToExport = rows.map((r) => ({
+      "Tgl Operasi": r.tanggal_operasi || "-",
+      "Waktu Tutup Buku": r.waktu_tutup_buku || "-",
+      "Part Number": r.Part_Number || "-",
+      "Nama Barang": r.nama_barang || "-",
+      Customer: r.Customer || "-",
+      "Stok Awal (Pcs)": Number(r.stok_awal) || 0,
+      "QTY/DAY (Pcs)": Number(r.qty_day) || 0,
+      "QTY OUT (Pcs)": Number(r.qty_out) || 0,
+      "SISA DEL (Pcs)": Number(r.sisa_del) || 0,
+      "ASSY FSG (Pcs)": Number(r.assy_fsg) || 0,
+      "Stok Akhir (Pcs)": Number(r.stok_akhir) || 0,
+      Mode: r.mode_rollover || "-",
+    }));
+    filename = "Arsip_Tutup_Buku_" + (tglFilter || dateStr) + ".xlsx";
   }
   if (dataToExport.length === 0)
     return showToast(

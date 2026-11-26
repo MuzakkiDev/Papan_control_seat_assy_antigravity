@@ -146,6 +146,7 @@ function apiGetMasterData() {
   var masuk = getTableRows("Transaksi_Masuk");
   var keluar = getTableRows("Transaksi_Keluar");
   var users = getTableRows("Users");
+  var arsip = getTableRows("Arsip_Harian");
 
   return {
     success: true,
@@ -154,7 +155,8 @@ function apiGetMasterData() {
     orders: orders,
     masuk: masuk,
     keluar: keluar,
-    users: users
+    users: users,
+    arsip: arsip
   };
 }
 
@@ -304,19 +306,58 @@ function checkAndRunDailyRollover(isForce, opKey) {
         }
       }
 
+      var waktuTutup = Utilities.formatDate(new Date(), tz, "yyyy-MM-dd HH:mm:ss");
+      var tglOperasiArsip = storedDate || opKey;
+      var modeRollover = isForce ? "MANUAL" : "AUTO_08:00";
+      var arsipRowsToAdd = [];
+
       for (var b = 0; b < barang.length; b++) {
         var item = barang[b];
         var partNum = String(item.Part_Number || "").trim();
         var totalQtyOut = qtyOutByPart[partNum] || 0;
+        var totalQtyDay = 0;
+        var custMap = {};
+
+        for (var o = 0; o < orders.length; o++) {
+          if (String(orders[o].Part_Number || "").trim() === partNum) {
+            totalQtyDay += (Number(orders[o].qty_order) || 0);
+            var cid = String(orders[o].id_customer || "").trim();
+            if (cid && cid !== "-") custMap[cid] = true;
+          }
+        }
 
         var currentStok = Number(item.stok) || 0;
         var currentAssy = Number(item.assy_fsg) || 0;
         var newOpeningStock = currentStok + currentAssy - totalQtyOut;
+        var sisaDel = Math.max(0, totalQtyDay - totalQtyOut);
+        var custList = Object.keys(custMap);
+
+        if (currentStok !== 0 || totalQtyDay !== 0 || totalQtyOut !== 0 || currentAssy !== 0 || newOpeningStock !== 0) {
+          arsipRowsToAdd.push({
+            id: generateId(),
+            tanggal_operasi: tglOperasiArsip,
+            waktu_tutup_buku: waktuTutup,
+            Part_Number: partNum,
+            nama_barang: item.nama_barang || "-",
+            Customer: custList.length > 0 ? custList.join(", ") : "-",
+            stok_awal: currentStok,
+            qty_day: totalQtyDay,
+            qty_out: totalQtyOut,
+            sisa_del: sisaDel,
+            assy_fsg: currentAssy,
+            stok_akhir: newOpeningStock,
+            mode_rollover: modeRollover
+          });
+        }
 
         item.stok = newOpeningStock;
         item.assy_fsg = 0;
       }
       saveTableRows("Master_Barang", barang);
+
+      if (arsipRowsToAdd.length > 0) {
+        appendMultipleRows("Arsip_Harian", arsipRowsToAdd);
+      }
 
       for (var o2 = 0; o2 < orders.length; o2++) {
         orders[o2].qty_order = 0;
@@ -889,7 +930,8 @@ const TABLE_SCHEMAS = {
   "List_Order": ["id", "Part_Number", "id_customer", "qty_order"],
   "Transaksi_Masuk": ["id", "tanggal", "Part_Number", "qty", "petugas", "catatan"],
   "Transaksi_Keluar": ["id", "tanggal", "Part_Number", "qty", "petugas", "catatan"],
-  "Users": ["id", "username", "password", "role"]
+  "Users": ["id", "username", "password", "role"],
+  "Arsip_Harian": ["id", "tanggal_operasi", "waktu_tutup_buku", "Part_Number", "nama_barang", "Customer", "stok_awal", "qty_day", "qty_out", "sisa_del", "assy_fsg", "stok_akhir", "mode_rollover"]
 };
 
 function initSheetsIfMissing() {
@@ -1094,6 +1136,34 @@ function appendTableRow(sheetName, rowObj) {
     rowArr.push(v === undefined || v === null ? "" : v);
   }
   sheet.appendRow(rowArr);
+}
+
+function appendMultipleRows(sheetName, rowObjs) {
+  if (!rowObjs || rowObjs.length === 0) return;
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  var defaultHeaders = TABLE_SCHEMAS[sheetName];
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+    sheet.appendRow(defaultHeaders);
+    formatHeaderRow(sheet);
+  }
+  var lastCol = sheet.getLastColumn();
+  var headers = lastCol > 0
+    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) { return String(h).trim(); })
+    : defaultHeaders;
+
+  var values = [];
+  for (var i = 0; i < rowObjs.length; i++) {
+    var rowArr = [];
+    for (var j = 0; j < headers.length; j++) {
+      var v = rowObjs[i][headers[j]];
+      rowArr.push(v === undefined || v === null ? "" : v);
+    }
+    values.push(rowArr);
+  }
+  var startRow = sheet.getLastRow() + 1;
+  sheet.getRange(startRow, 1, values.length, headers.length).setValues(values);
 }
 
 function generateId() {

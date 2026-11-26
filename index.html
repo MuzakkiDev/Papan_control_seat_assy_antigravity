@@ -532,6 +532,14 @@
                   >
                 </div>
                 <button
+                  onclick="exportToExcel('PapanKontrol')"
+                  class="px-3.5 py-2 rounded-full bg-white text-[#58111A] border border-[#58111A]/20 hover:bg-[#58111A] hover:text-white font-semibold text-xs transition-all shadow-xs flex items-center gap-1.5 active:scale-95"
+                  title="Ekspor Papan Kontrol ke Excel"
+                >
+                  <i class="fa-solid fa-file-excel"></i>
+                  <span data-i18n="btn_export">Ekspor Excel</span>
+                </button>
+                <button
                   onclick="toggleFullScreen()"
                   id="btnFullscreen"
                   class="w-9 h-9 rounded-full bg-[#58111A] hover:bg-[#430A13] text-white transition-all shadow-md shadow-[#58111A]/20 flex items-center justify-center active:scale-95"
@@ -763,6 +771,26 @@
         <!-- TAB RIWAYAT TRANSAKSI -->
         <section id="tab-riwayat" class="tab-pane hidden space-y-6">
           <div class="glass-panel rounded-3xl p-6 sm:p-8">
+            <div class="flex items-center gap-2 mb-6 border-b border-black/5 pb-4">
+              <button
+                id="btnSubRiwayatTransaksi"
+                onclick="switchRiwayatSubTab('transaksi')"
+                class="px-5 py-2 rounded-full text-sm font-semibold transition-all bg-[#58111A] text-white shadow-sm"
+              >
+                <i class="fa-solid fa-clock-rotate-left mr-1.5"></i>
+                <span data-i18n="nav_hist">Riwayat Transaksi</span>
+              </button>
+              <button
+                id="btnSubRiwayatArsip"
+                onclick="switchRiwayatSubTab('arsip')"
+                class="px-5 py-2 rounded-full text-sm font-semibold transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+              >
+                <i class="fa-solid fa-box-archive mr-1.5"></i>
+                <span>Arsip Tutup Buku</span>
+              </button>
+            </div>
+
+            <div id="panelRiwayatTransaksi">
             <div
               class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-black/5 pb-6 mb-6"
             >
@@ -829,6 +857,78 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+            </div>
+
+            <div id="panelArsipHarian" class="hidden">
+              <div
+                class="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-black/5 pb-6 mb-6"
+              >
+                <div>
+                  <h3 class="text-2xl font-bold text-gray-900">
+                    Arsip Tutup Buku Harian
+                  </h3>
+                  <p class="text-xs text-slate-500 mt-1">
+                    Rekap otomatis setiap pergantian hari jam 08:00 WIB atau Tutup Buku Manual
+                  </p>
+                </div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <input
+                    type="date"
+                    id="filterTanggalArsip"
+                    onchange="renderArsipHarianTable()"
+                    class="glass-input rounded-full px-4 py-2 text-sm font-medium text-gray-700 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    id="searchArsipPart"
+                    oninput="renderArsipHarianTable()"
+                    placeholder="Cari Part Number..."
+                    class="glass-input rounded-full px-4 py-2 text-sm font-medium text-gray-700 w-44"
+                  />
+                  <button
+                    onclick="document.getElementById('filterTanggalArsip').value=''; document.getElementById('searchArsipPart').value=''; renderArsipHarianTable();"
+                    class="px-4 py-2 rounded-full bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 text-xs font-semibold"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onclick="exportToExcel('ArsipHarian')"
+                    class="px-5 py-2.5 rounded-full bg-[#58111A] hover:bg-[#430A13] text-white font-medium text-sm transition-colors shadow-sm flex items-center gap-2"
+                  >
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span data-i18n="btn_export">Ekspor Excel</span>
+                  </button>
+                </div>
+              </div>
+              <div
+                class="overflow-x-auto rounded-2xl bg-white/40 border border-white shadow-sm"
+              >
+                <table class="w-full text-xs text-left glass-table">
+                  <thead>
+                    <tr>
+                      <th class="w-24 text-center">Tgl Operasi</th>
+                      <th class="w-32 text-center">Waktu Tutup</th>
+                      <th class="w-36">Part Number</th>
+                      <th class="w-24 text-center">Customer</th>
+                      <th class="w-20 text-center">Stok Awal</th>
+                      <th class="w-20 text-center">QTY/DAY</th>
+                      <th class="w-20 text-center">QTY OUT</th>
+                      <th class="w-20 text-center">SISA DEL</th>
+                      <th class="w-20 text-center">ASSY FSG</th>
+                      <th class="w-24 text-center">Stok Akhir</th>
+                      <th class="w-24 text-center">Mode</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tblArsipHarianBody" class="font-medium text-gray-700">
+                    <tr>
+                      <td colspan="11" class="py-12 text-center text-gray-400">
+                        Belum ada data arsip tutup buku...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </section>
