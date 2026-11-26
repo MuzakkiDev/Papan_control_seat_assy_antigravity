@@ -2724,7 +2724,143 @@ document.addEventListener("fullscreenchange", () => {
   handleFullscreenUI(Boolean(document.fullscreenElement));
 });
 
-function exportToExcel(tipe) {
+const EXPORT_DB_NAME = "sim_inventory_export_db";
+const EXPORT_STORE_NAME = "handles";
+
+function openExportDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(EXPORT_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      if (!req.result.objectStoreNames.contains(EXPORT_STORE_NAME)) {
+        req.result.createObjectStore(EXPORT_STORE_NAME);
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getSavedExportDirHandle() {
+  try {
+    const db = await openExportDb();
+    return await new Promise((resolve) => {
+      const tx = db.transaction(EXPORT_STORE_NAME, "readonly");
+      const req = tx.objectStore(EXPORT_STORE_NAME).get("exportDir");
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) {
+    return null;
+  }
+}
+
+async function saveExportDirHandle(handle) {
+  try {
+    const db = await openExportDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(EXPORT_STORE_NAME, "readwrite");
+      tx.objectStore(EXPORT_STORE_NAME).put(handle, "exportDir");
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {}
+}
+
+function getExportSettings() {
+  try {
+    const raw = localStorage.getItem("sim_export_settings");
+    return raw
+      ? JSON.parse(raw)
+      : { mode: "default", groupByMonth: true, prefix: "", folderName: "" };
+  } catch (e) {
+    return { mode: "default", groupByMonth: true, prefix: "", folderName: "" };
+  }
+}
+
+function saveExportSettings(cfg) {
+  localStorage.setItem("sim_export_settings", JSON.stringify(cfg));
+}
+
+function toggleExportFolderPickerBox() {
+  const checked = document.querySelector('input[name="exportModeRadio"]:checked')?.value;
+  const box = document.getElementById("boxExportFolderPicker");
+  if (box) box.classList.toggle("hidden", checked !== "folder");
+}
+
+async function openExportSettingsModal() {
+  const modal = document.getElementById("modalExportSettings");
+  if (!modal) return;
+  const cfg = getExportSettings();
+  const radio = document.querySelector(`input[name="exportModeRadio"][value="${cfg.mode || "default"}"]`);
+  if (radio) radio.checked = true;
+  const chkMonth = document.getElementById("chkExportGroupMonth");
+  if (chkMonth) chkMonth.checked = cfg.groupByMonth !== false;
+  const inpPrefix = document.getElementById("inpExportPrefix");
+  if (inpPrefix) inpPrefix.value = cfg.prefix || "";
+
+  const handle = await getSavedExportDirHandle();
+  const lbl = document.getElementById("lblSelectedExportFolder");
+  if (lbl) {
+    lbl.innerText = handle ? handle.name : cfg.folderName || "Belum ada folder dipilih";
+  }
+  toggleExportFolderPickerBox();
+  modal.classList.remove("hidden");
+}
+
+function closeExportSettingsModal() {
+  const modal = document.getElementById("modalExportSettings");
+  if (modal) modal.classList.add("hidden");
+}
+
+async function pickExportFolder() {
+  if (typeof window.showDirectoryPicker !== "function") {
+    return showToast(
+      "warning",
+      "Browser Tidak Mendukung",
+      "Gunakan Chrome / Edge di komputer untuk memilih folder langsung.",
+    );
+  }
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+    await saveExportDirHandle(dirHandle);
+    const cfg = getExportSettings();
+    cfg.folderName = dirHandle.name;
+    cfg.mode = "folder";
+    saveExportSettings(cfg);
+    const lbl = document.getElementById("lblSelectedExportFolder");
+    if (lbl) lbl.innerText = dirHandle.name;
+    showToast("success", "Folder Dipilih", `File ekspor akan disimpan ke folder "${dirHandle.name}".`);
+  } catch (err) {
+    if (err && err.name !== "AbortError") {
+      showToast("error", "Gagal Memilih Folder", err.message);
+    }
+  }
+}
+
+async function saveExportSettingsFromModal() {
+  const mode = document.querySelector('input[name="exportModeRadio"]:checked')?.value || "default";
+  const groupByMonth = Boolean(document.getElementById("chkExportGroupMonth")?.checked);
+  const prefix = (document.getElementById("inpExportPrefix")?.value || "").trim();
+
+  if (mode === "folder") {
+    const handle = await getSavedExportDirHandle();
+    if (!handle) {
+      return showToast("warning", "Pilih Folder Dulu", "Klik tombol 'Pilih Folder' terlebih dahulu.");
+    }
+  }
+
+  const oldCfg = getExportSettings();
+  saveExportSettings({
+    mode,
+    groupByMonth,
+    prefix,
+    folderName: oldCfg.folderName || "",
+  });
+  closeExportSettingsModal();
+  showToast("success", "Pengaturan Disimpan", "Lokasi penyimpanan ekspor telah diperbarui.");
+}
+
+async function exportToExcel(tipe) {
   if (typeof XLSX === "undefined")
     return showToast(
       "error",
@@ -2854,8 +2990,66 @@ function exportToExcel(tipe) {
   const worksheet = XLSX.utils.json_to_sheet(dataToExport),
     workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-  XLSX.writeFile(workbook, filename);
-  showToast("success", "Diunduh", filename);
+
+  const cfg = getExportSettings();
+  const cleanPrefix = cfg.prefix ? cfg.prefix.replace(/[\\/:*?"<>|]/g, "") : "";
+  const finalFilename = cleanPrefix + filename;
+  const wbArray = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbArray], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  if (cfg.mode === "folder" && typeof window.showDirectoryPicker === "function") {
+    try {
+      let dirHandle = await getSavedExportDirHandle();
+      if (!dirHandle) {
+        dirHandle = await window.showDirectoryPicker({ mode: "readwrite" });
+        await saveExportDirHandle(dirHandle);
+      }
+      let perm = await dirHandle.queryPermission({ mode: "readwrite" });
+      if (perm !== "granted") {
+        perm = await dirHandle.requestPermission({ mode: "readwrite" });
+      }
+      if (perm === "granted") {
+        let targetDir = dirHandle;
+        if (cfg.groupByMonth !== false) {
+          const ym = dateStr.slice(0, 7);
+          targetDir = await dirHandle.getDirectoryHandle(ym, { create: true });
+        }
+        const fileHandle = await targetDir.getFileHandle(finalFilename, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        const folderDisplay = cfg.groupByMonth !== false ? `${dirHandle.name}/${dateStr.slice(0, 7)}` : dirHandle.name;
+        return showToast("success", "Tersimpan Rapi!", `${finalFilename} -> ${folderDisplay}`);
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      console.warn("Folder export fallback:", err);
+    }
+  } else if (cfg.mode === "ask" && typeof window.showSaveFilePicker === "function") {
+    try {
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: finalFilename,
+        types: [
+          {
+            description: "Excel Workbook (.xlsx)",
+            accept: { "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"] },
+          },
+        ],
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return showToast("success", "Tersimpan!", finalFilename);
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      console.warn("Save picker fallback:", err);
+    }
+  }
+
+  XLSX.writeFile(workbook, finalFilename);
+  showToast("success", "Diunduh", finalFilename);
 }
 
 function openModalBarang() {
